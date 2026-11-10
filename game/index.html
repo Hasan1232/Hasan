@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#071521">
+<title>Sky Front</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" hidden>
+  <div class="hud-top">
+    <button id="btn-pause" class="icon-btn" aria-label="Pause">❚❚</button>
+    <div class="hud-block">
+      <div class="hud-label" data-t="hp"></div>
+      <div class="bar"><div id="hp-fill"></div></div>
+    </div>
+    <div class="hud-stats">
+      <span class="stat"><span class="hud-label" data-t="missiles"></span> <b id="st-msl"></b></span>
+      <span class="stat"><span class="hud-label" data-t="flares"></span> <b id="st-flr"></b></span>
+      <span class="stat"><span class="hud-label" data-t="lives"></span> <b id="st-lives"></b></span>
+      <span class="stat"><span class="hud-label" data-t="targets"></span> <b id="st-tg"></b></span>
+      <span class="stat"><span class="hud-label" data-t="score"></span> <b id="st-score"></b></span>
+    </div>
+  </div>
+  <div id="over-label"></div>
+  <div id="warn-missile" class="warn" hidden></div>
+  <div id="warn-radar" class="warn small" hidden></div>
+  <div id="banner" hidden></div>
+  <div id="toasts"></div>
+</div>
+
+<div id="touch" hidden>
+  <div id="stick-zone"><div id="stick-base"><div id="stick-knob"></div></div></div>
+  <div id="buttons">
+    <div class="zoom-row">
+      <button id="btn-zout" class="round small">−</button>
+      <button id="btn-zin" class="round small">+</button>
+    </div>
+    <button id="btn-flr" class="round mid" data-t="flr"></button>
+    <button id="btn-msl" class="round mid" data-t="msl"></button>
+    <button id="btn-gun" class="round big" data-t="gun"></button>
+  </div>
+</div>
+
+<div id="screen"></div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

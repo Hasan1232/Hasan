@@ -1,0 +1,148 @@
+:root {
+  --bg: #071521;
+  --panel: rgba(9, 24, 36, 0.88);
+  --line: rgba(140, 190, 220, 0.25);
+  --text: #e6eef2;
+  --muted: #9fb3bf;
+  --accent: #4fa3e3;
+  --accent-2: #7cc4ff;
+  --danger: #ff5a4f;
+  --ok: #5fd08a;
+  --warn: #ffb030;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", "Noto Sans", sans-serif;
+  user-select: none; -webkit-user-select: none; touch-action: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+button { font: inherit; color: inherit; cursor: pointer; }
+[hidden] { display: none !important; }
+
+/* ---------- menus ---------- */
+#screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none; }
+#screen:empty { display: none; }
+.panel {
+  pointer-events: auto; width: min(460px, 100%); max-height: calc(100% - 8px); display: flex; flex-direction: column; gap: 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.panel h1 { margin: 0; font-size: 34px; letter-spacing: 0.5px; text-align: center; }
+.panel h2 { margin: 0; font-size: 20px; }
+.panel p { margin: 0; color: var(--muted); }
+.sub { text-align: center; color: var(--muted); margin-top: -6px !important; }
+.btn {
+  border: 1px solid var(--line); background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px 14px;
+  text-align: center; font-weight: 600; transition: background .15s, transform .05s;
+}
+.btn:hover { background: rgba(255,255,255,0.1); }
+.btn:active { transform: scale(0.98); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #04121c; }
+.btn.primary:hover { background: var(--accent-2); }
+.btn.danger { border-color: rgba(255,90,79,0.5); color: #ffb3ad; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row > .btn { flex: 1 1 0; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg .btn { flex: 1 1 auto; padding: 9px 10px; font-weight: 500; }
+.seg .btn.on { background: rgba(79,163,227,0.25); border-color: var(--accent); }
+.field-label { font-size: 13px; color: var(--muted); margin-bottom: -4px; }
+input[type=search] {
+  width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: rgba(0,0,0,0.3); color: var(--text); font: inherit; user-select: text; -webkit-user-select: text;
+}
+.list { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 120px; flex: 1 1 auto; touch-action: pan-y; }
+.list button {
+  display: flex; align-items: center; gap: 10px; border: 0; background: transparent; padding: 9px 10px; border-radius: 8px; text-align: start;
+}
+.list button:hover, .list button:focus-visible { background: rgba(255,255,255,0.08); outline: none; }
+.list .flag { font-size: 20px; width: 26px; text-align: center; }
+.list .meta { margin-inline-start: auto; color: var(--muted); font-size: 12px; }
+.list .done { color: var(--ok); }
+.section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 6px 4px 2px; }
+.versus { display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 18px; font-weight: 700; text-align: center; }
+.versus .side { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+.versus .big-flag { font-size: 42px; line-height: 1; }
+.versus .vs { color: var(--danger); font-size: 22px; }
+.callout { border-inline-start: 3px solid var(--danger); padding: 8px 12px; background: rgba(255,90,79,0.08); border-radius: 6px; }
+.tips { font-size: 14px; display: flex; flex-direction: column; gap: 8px; }
+.stats-line { display: flex; justify-content: space-around; text-align: center; }
+.stats-line b { display: block; font-size: 22px; color: var(--text); }
+
+/* ---------- HUD ---------- */
+#hud { position: fixed; inset: 0; pointer-events: none; }
+.hud-top {
+  position: absolute; top: env(safe-area-inset-top, 0); left: 0; right: 0; display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px; background: linear-gradient(rgba(4,12,20,0.75), rgba(4,12,20,0));
+}
+.icon-btn {
+  pointer-events: auto; width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line);
+  background: rgba(0,0,0,0.35); font-size: 13px; flex: none;
+}
+.hud-block { display: flex; flex-direction: column; gap: 3px; min-width: 90px; }
+.hud-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.bar { height: 8px; width: 120px; background: rgba(255,255,255,0.12); border-radius: 4px; overflow: hidden; }
+#hp-fill { height: 100%; width: 100%; background: var(--ok); transition: width .2s, background .2s; }
+.hud-stats { display: flex; gap: 14px; flex-wrap: wrap; row-gap: 2px; }
+.stat b { font-size: 15px; font-variant-numeric: tabular-nums; }
+#over-label {
+  position: absolute; top: calc(env(safe-area-inset-top, 0px) + 62px); left: 50%; transform: translateX(-50%);
+  font-size: 13px; color: var(--muted); background: rgba(0,0,0,0.3); padding: 2px 10px; border-radius: 10px; white-space: nowrap;
+}
+.warn {
+  position: absolute; top: 30%; left: 50%; transform: translateX(-50%); font-size: 28px; font-weight: 800;
+  color: var(--danger); text-shadow: 0 0 12px rgba(255,60,40,0.8); animation: blink .35s steps(2) infinite; white-space: nowrap;
+}
+.warn.small { top: calc(30% + 40px); font-size: 14px; color: var(--warn); text-shadow: none; animation: none; }
+@keyframes blink { 50% { opacity: 0.25; } }
+#banner {
+  position: absolute; bottom: 26%; left: 50%; transform: translateX(-50%); padding: 6px 14px; border-radius: 10px;
+  background: rgba(0,0,0,0.5); color: var(--ok); font-weight: 600; white-space: nowrap;
+}
+#banner.bad { color: var(--warn); }
+#toasts { position: absolute; top: 38%; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.toast { background: rgba(0,0,0,0.55); padding: 4px 12px; border-radius: 8px; font-weight: 600; font-size: 14px; animation: rise 2.5s forwards; }
+.toast.bad { color: var(--danger); }
+@keyframes rise { 0% { opacity: 0; transform: translateY(8px); } 10% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
+
+/* ---------- touch controls ---------- */
+#touch { position: fixed; inset: 0; pointer-events: none; }
+#stick-zone { position: absolute; left: 0; bottom: 0; width: 50%; height: 60%; pointer-events: auto; touch-action: none; }
+#stick-base {
+  position: absolute; left: 90px; top: calc(100% - 120px); width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%;
+  border: 2px solid rgba(200,225,240,0.25); background: rgba(0,0,0,0.15); opacity: 0.6;
+}
+#stick-base.active { opacity: 1; }
+#stick-knob {
+  position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%;
+  background: rgba(200,225,240,0.35); border: 2px solid rgba(255,255,255,0.4);
+}
+#buttons {
+  position: absolute; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: auto auto; grid-template-areas: "zoom zoom" "flr msl" "gun gun"; gap: 10px; justify-items: center; align-items: end;
+}
+.zoom-row { grid-area: zoom; display: flex; gap: 10px; justify-self: end; }
+#btn-flr { grid-area: flr; } #btn-msl { grid-area: msl; } #btn-gun { grid-area: gun; justify-self: end; }
+.round {
+  pointer-events: auto; touch-action: none; border-radius: 50%; border: 2px solid rgba(255,255,255,0.35);
+  background: rgba(10,30,45,0.55); font-weight: 800; font-size: 13px; color: #fff;
+}
+.round.big { width: 84px; height: 84px; background: rgba(160,50,40,0.6); }
+.round.mid { width: 64px; height: 64px; }
+.round.small { width: 40px; height: 40px; font-size: 20px; }
+.round.down { background: rgba(255,255,255,0.35); }
+#btn-msl { background: rgba(170,120,30,0.6); }
+
+/* Stick stays left and buttons right in every language, like a real cockpit. */
+#touch, #buttons { direction: ltr; }
+
+@media (max-width: 560px) {
+  .hud-top { gap: 8px; padding: 6px 8px; }
+  .bar { width: 80px; }
+  .hud-stats { gap: 8px; }
+  .hud-stats .hud-label { font-size: 9px; }
+  .stat b { font-size: 13px; }
+  .panel { padding: 16px; }
+  .panel h1 { font-size: 28px; }
+}
