@@ -2,6 +2,8 @@
 
 import { WORLD } from './geo.js';
 import { countryName, t, isRtl } from './i18n.js';
+import { drawCityGround, drawBuildings, drawCityLabels } from './scenery.js';
+import { initSprites, drawDecals, drawTrails, drawParticles, glowAt } from './fx.js';
 
 const C = {
   ocean: '#0a2130', grid: 'rgba(120,170,200,0.08)', land: [42, 58, 44], border: 'rgba(170,200,160,0.35)',
@@ -10,8 +12,8 @@ const C = {
 };
 
 export const cam = { x: 0, y: 0, zoom: 30 };
-const ZOOMS = [14, 20, 30, 42, 58];
-let zoomIdx = 2;
+const ZOOMS = [14, 20, 30, 44, 62, 85];
+let zoomIdx = 3;
 
 export function changeZoom(dir) {
   zoomIdx = Math.max(0, Math.min(ZOOMS.length - 1, zoomIdx + dir));
@@ -26,6 +28,7 @@ const clouds = Array.from({ length: 140 }, () => ({
 
 export function setupCanvas(el) {
   canvas = el; g = el.getContext('2d');
+  initSprites();
   const resize = () => {
     dpr = Math.min(2, devicePixelRatio || 1);
     W = innerWidth; H = innerHeight;
@@ -86,12 +89,14 @@ export function draw(s, time) {
   if (!cam.ready) { cam.x = tx; cam.y = ty; cam.ready = true; }
 
   const z = cam.zoom;
+  const shake = (s.shake || 0) / z;
+  const camX = cam.x + (Math.random() - 0.5) * shake, camY = cam.y + (Math.random() - 0.5) * shake;
   const view = { minX: cam.x - W / 2 / z, maxX: cam.x + W / 2 / z, minY: cam.y - H / 2 / z, maxY: cam.y + H / 2 / z };
   const roles = { home: s.home.code, enemy: s.enemy.code, conquered: s.conquered };
 
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.fillStyle = C.ocean; g.fillRect(0, 0, W, H);
-  const toWorld = () => g.setTransform(dpr * z, 0, 0, dpr * z, dpr * (W / 2 - cam.x * z), dpr * (H / 2 - cam.y * z));
+  const toWorld = () => g.setTransform(dpr * z, 0, 0, dpr * z, dpr * (W / 2 - camX * z), dpr * (H / 2 - camY * z));
   toWorld();
 
   // Graticule for a sense of speed over open sea.
@@ -118,6 +123,21 @@ export function draw(s, time) {
   for (const r of s.enemy.rings) if (!(r.maxX < view.minX || r.minX > view.maxX || r.maxY < view.minY || r.minY > view.maxY)) g.stroke(r.path);
   g.restore();
 
+  // Cities, scorch marks, then every building in fake 3D.
+  const cities = s.cities ? drawCityGround(g, s.cities, view, z) : [];
+  drawDecals(g, s);
+  drawBase(s.base, z, time, s.repairing);
+  for (const u of s.ground) if (!u.alive) drawWreck(u);
+  const items = [];
+  for (const c of cities) for (const b of c.buildings) {
+    if (b.x < view.minX - 0.5 || b.x > view.maxX + 0.5 || b.y < view.minY - 0.5 || b.y > view.maxY + 0.5) continue;
+    items.push(b);
+  }
+  const addProps = list => { for (const pr of list || []) if (Math.abs(pr.x - cam.x) < W / z && Math.abs(pr.y - cam.y) < H / z) items.push(pr); };
+  addProps(s.baseProps);
+  for (const u of s.ground) addProps(u.props);
+  drawBuildings(g, items, { x: camX, y: camY }, z, false);
+
   // SAM range rings near the player.
   for (const u of s.ground) {
     if (!u.alive || u.kind !== 'sam') continue;
@@ -129,58 +149,43 @@ export function draw(s, time) {
     g.lineWidth = 1.5 / z; g.setLineDash([8 / z, 8 / z]);
     g.fill(); g.stroke(); g.setLineDash([]);
   }
-
-  // Our base.
-  drawBase(s.base, z, time, s.repairing);
   for (const u of s.ground) if (u.alive) drawGround(u, z, time);
-  for (const u of s.ground) if (!u.alive) drawWreck(u);
 
-  // Effects under aircraft.
-  for (const e of s.fx) if (e.type === 'smoke') {
-    const k = e.t / e.life;
-    g.fillStyle = `rgba(210,215,220,${0.35 * (1 - k)})`;
-    g.beginPath(); g.arc(e.x, e.y, 0.05 + k * 0.18, 0, 6.283); g.fill();
-  }
-  for (const f of s.flares) {
-    const k = f.t / 2.2;
-    g.fillStyle = `rgba(255,230,140,${1 - k})`;
-    g.beginPath(); g.arc(f.x, f.y, 0.07 + 0.05 * Math.sin(time * 40), 0, 6.283); g.fill();
-    g.fillStyle = `rgba(255,200,80,${0.25 * (1 - k)})`;
-    g.beginPath(); g.arc(f.x, f.y, 0.25, 0, 6.283); g.fill();
-  }
-
-  // Shadows, then aircraft.
+  // Contrails, then shadows, then aircraft.
+  drawTrails(g, s, z);
   const air = s.air.filter(a => a.alive);
   for (const a of air) drawJet(a, z, true);
   if (p.alive) drawJet(p, z, true);
+  for (const f of s.falling) drawJet({ ...f, thr: 0 }, z, true, 1 - f.t / f.life);
+  for (const f of s.falling) drawJet({ ...f, thr: 0, hitT: 0 }, z, false, 1 - f.t / f.life * 0.5);
   for (const a of air) drawJet(a, z, false);
   if (p.alive) drawJet(p, z, false);
 
   for (const m of s.missiles) {
     g.save(); g.translate(m.x, m.y); g.rotate(m.h);
     g.fillStyle = '#e8e8e8'; g.fillRect(-0.12, -0.022, 0.2, 0.044);
-    g.fillStyle = m.side === 'enemy' ? '#ff6a3a' : '#ffd36a';
-    g.beginPath(); g.arc(-0.14, 0, 0.04 + Math.random() * 0.03, 0, 6.283); g.fill();
+    g.fillStyle = m.side === 'enemy' ? '#c0392b' : '#4a6a8a'; g.fillRect(0.06, -0.022, 0.03, 0.044);
     g.restore();
+    glowAt(g, m.x - Math.cos(m.h) * 0.14, m.y - Math.sin(m.h) * 0.14, 0.14 + Math.random() * 0.06, 'fire');
   }
+  for (const f of s.flares) {
+    const k = f.t / 2.2;
+    glowAt(g, f.x, f.y, 0.35 * (1 - k * 0.5) * (0.85 + Math.random() * 0.3), 'glow', 1 - k);
+  }
+
+  // Glowing tracers.
+  g.globalCompositeOperation = 'lighter';
   g.lineCap = 'round';
   for (const b of s.bullets) {
-    g.strokeStyle = b.side === 'friend' ? '#ffe680' : '#ff8a6a';
-    g.lineWidth = 2.2 / z;
-    g.beginPath(); g.moveTo(b.x, b.y); g.lineTo(b.x - b.vx * 0.03, b.y - b.vy * 0.03); g.stroke();
+    g.strokeStyle = b.side === 'friend' ? 'rgba(255,220,120,0.95)' : 'rgba(255,120,90,0.95)';
+    g.lineWidth = 2.4 / z;
+    g.beginPath(); g.moveTo(b.x, b.y); g.lineTo(b.x - b.vx * 0.035, b.y - b.vy * 0.035); g.stroke();
+    g.strokeStyle = b.side === 'friend' ? 'rgba(255,200,80,0.25)' : 'rgba(255,90,60,0.25)';
+    g.lineWidth = 6 / z; g.stroke();
   }
-  for (const e of s.fx) {
-    const k = e.t / e.life;
-    if (e.type === 'boom') {
-      g.fillStyle = `rgba(255,${200 - k * 150 | 0},60,${0.8 * (1 - k)})`;
-      g.beginPath(); g.arc(e.x, e.y, e.size * (0.2 + k * 0.6), 0, 6.283); g.fill();
-      g.strokeStyle = `rgba(255,240,200,${0.6 * (1 - k)})`; g.lineWidth = 2 / z;
-      g.beginPath(); g.arc(e.x, e.y, e.size * (0.3 + k * 1.2), 0, 6.283); g.stroke();
-    } else if (e.type === 'spark') {
-      g.fillStyle = `rgba(255,${180 + Math.random() * 60 | 0},80,${1 - k})`;
-      g.fillRect(e.x - 0.03, e.y - 0.03, 0.06, 0.06);
-    }
-  }
+  g.globalCompositeOperation = 'source-over';
+
+  drawParticles(g, s, z);
 
   // Clouds drift above everything.
   for (const c of clouds) {
@@ -194,6 +199,7 @@ export function draw(s, time) {
   // Screen-space overlays.
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   drawLabels(visible, view, z);
+  drawCityLabels(g, cities, { x: camX, y: camY }, z, W, H);
   const toScreen = (x, y) => [W / 2 + (x - cam.x) * z, H / 2 + (y - cam.y) * z];
   if (p.alive && p.lock) drawLockBox(p, toScreen, time);
   drawArrows(s, toScreen);
@@ -209,8 +215,8 @@ function samRangeView(s, u) {
   return 4.5 * (radarUp ? 1.3 : 1);
 }
 
-function drawJet(a, z, shadow) {
-  const L = 0.62; // length in degrees
+function drawJet(a, z, shadow, scale = 1) {
+  const L = 0.62 * scale; // length in degrees
   g.save();
   g.translate(a.x + (shadow ? 0.25 : 0), a.y + (shadow ? 0.35 : 0));
   g.rotate(a.h);

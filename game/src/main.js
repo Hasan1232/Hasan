@@ -1,6 +1,7 @@
 // Menus, HUD, saving and the main loop.
 
 import { loadWorld } from './geo.js';
+import { loadCities } from './scenery.js';
 import { LANGS, detectLang, setLang, getLang, t, countryName, flag } from './i18n.js';
 import { input, setupInput, consumeEdges, resetInput } from './input.js';
 import { createWar, update, nearbyCountries, SPEED_SCALE } from './game.js';
@@ -24,6 +25,7 @@ setSound(save.sound);
 const $ = id => document.getElementById(id);
 const screenEl = $('screen');
 let world = null;
+let cities = [];
 let war = null;
 let mode = 'loading'; // loading | menu | play | paused | over
 let pick = { home: null, enemy: null };
@@ -173,6 +175,7 @@ function showPickEnemy() {
 
 function showBriefing() {
   war = createWar(world, pick.home, pick.enemy, save.campaign);
+  war.cities = cities;
   cam.ready = false;
   h(`<div class="panel">
     <div class="versus">
@@ -336,5 +339,7 @@ h(`<div class="panel"><h1>✈ ${esc(t('title'))}</h1><p class="sub">…</p></div
 requestAnimationFrame(frame);
 
 loadWorld('data/countries.json')
-  .then(w => { world = w; window.__skyfront = { get war() { return war; }, world }; showMenu(); })
+  .then(async w => {
+    try { cities = await loadCities('data/cities.json', w); } catch { cities = []; }
+    world = w; window.__skyfront = { get war() { return war; }, world }; showMenu(); })
   .catch(err => h(`<div class="panel"><h2>⚠</h2><p>${esc(err.message)}</p></div>`));

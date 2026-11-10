@@ -3,6 +3,8 @@
 
 import { randomPointIn, closestPointIn, countryAt, dist2, WORLD } from './geo.js';
 import { sfx } from './audio.js';
+import { initFx, updateFx, explode, addFire, sparks, exhaust, damageSmoke, updateTrail } from './fx.js';
+import { makeProps } from './scenery.js';
 
 export const SPEED_SCALE = { slow: 0.75, medium: 1, fast: 1.3 };
 
@@ -43,7 +45,7 @@ export function createWar(world, homeCode, enemyCode, carry = {}) {
     phase: 'play', endT: 0,
     base: { x: base.x, y: base.y },
     player: null,
-    air: [], ground: [], bullets: [], missiles: [], flares: [], fx: [],
+    air: [], ground: [], bullets: [], missiles: [], flares: [], falling: [], timers: [],
     msgs: [],
     warn: { missile: false, radar: false },
     over: null, overT: 0,
@@ -51,6 +53,8 @@ export function createWar(world, homeCode, enemyCode, carry = {}) {
     spawnT: 0,
   };
 
+  initFx(s);
+  s.baseProps = makeProps('airbase', base.x, base.y);
   placeEnemyAssets(s);
   for (let i = 0; i < 2; i++) {
     const p = scatterNear(home, s.base, 3.5, 1.2);
@@ -105,7 +109,7 @@ function scatterNear(c, center, radius, minGap) {
 
 function makeGround(kind, side, p) {
   const k = GROUND[kind];
-  return { kind, side, x: p.x, y: p.y, hp: k.hp, max: k.hp, r: k.r, cd: 2 + Math.random() * 3, spawnCd: 18, alive: true, rot: Math.random() * 6 };
+  return { kind, side, x: p.x, y: p.y, hp: k.hp, max: k.hp, r: k.r, cd: 2 + Math.random() * 3, spawnCd: 18, alive: true, rot: Math.random() * 6, props: makeProps(kind, p.x, p.y) };
 }
 
 function spawnPlayer(s) {
@@ -145,8 +149,10 @@ export function update(s, dt, inp) {
   updateMissiles(s, dt);
   for (const fl of s.flares) { fl.t += dt; fl.x += fl.vx * dt; fl.y += fl.vy * dt; fl.vx *= 0.97; fl.vy *= 0.97; }
   s.flares = s.flares.filter(f => f.t < 2.2);
-  for (const e of s.fx) { e.t += dt; if (e.vx) { e.x += e.vx * dt; e.y += e.vy * dt; } }
-  s.fx = s.fx.filter(e => e.t < e.life);
+  updateFalling(s, dt);
+  for (const tm of s.timers) { tm.t -= dt; if (tm.t <= 0) tm.fn(); }
+  s.timers = s.timers.filter(tm => tm.t > 0);
+  updateFx(s, dt);
   s.air = s.air.filter(f => f.alive);
 
   // Reinforcements from surviving enemy air bases.
@@ -186,6 +192,11 @@ function updatePlayer(s, p, dt, inp) {
     p.h = wrap(p.h + inp.turn * P.turn * (1.1 - 0.25 * p.thr) * dt);
     p.thr = clamp(p.thr + inp.throttle * 0.7 * dt, 0, 1);
   }
+  const turning = Math.abs(wrap(p.h - (p.lastH ?? p.h))) / Math.max(dt, 1e-3);
+  p.lastH = p.h;
+  updateTrail(p, dt, turning > 1.2 || p.thr > 0.9);
+  p.smokeT = (p.smokeT || 0) - dt;
+  if (p.hp < 50 && p.smokeT <= 0) { p.smokeT = 0.07; damageSmoke(s, p, p.hp / P.hp); }
   const target = P.min + (P.max - P.min) * p.thr;
   p.spd += (target - p.spd) * Math.min(1, dt * 1.5);
   p.x += Math.cos(p.h) * p.spd * dt;
@@ -297,6 +308,9 @@ function updateFighter(s, f, dt) {
   f.x += Math.cos(f.h) * spd * dt;
   f.y += Math.sin(f.h) * spd * dt;
   f.spd = spd;
+  updateTrail(f, dt, Math.abs(diff) > 0.4);
+  f.smokeT = (f.smokeT || 0) - dt;
+  if (f.hp < EF.hp * 0.5 && f.smokeT <= 0) { f.smokeT = 0.08; damageSmoke(s, f, f.hp / EF.hp); }
 
   if (!chasing) return;
   const dist = d(f, p);
@@ -337,10 +351,10 @@ function updateBullets(s, dt) {
   for (const b of s.bullets) {
     b.t += dt; b.x += b.vx * dt; b.y += b.vy * dt;
     if (b.side === 'friend') {
-      for (const f of s.air) if (d(f, b) < f.r) { damage(s, f, b.dmg); b.t = 99; break; }
-      if (b.t < 99) for (const g of s.ground) if (g.alive && g.side === 'enemy' && d(g, b) < g.r) { damage(s, g, b.dmg); b.t = 99; break; }
+      for (const f of s.air) if (d(f, b) < f.r) { sparks(s, b.x, b.y, 4); damage(s, f, b.dmg); b.t = 99; break; }
+      if (b.t < 99) for (const g of s.ground) if (g.alive && g.side === 'enemy' && d(g, b) < g.r) { sparks(s, b.x, b.y, 3); damage(s, g, b.dmg); b.t = 99; break; }
     } else if (s.player.alive && d(s.player, b) < s.player.r) {
-      damage(s, s.player, b.dmg); b.t = 99;
+      sparks(s, b.x, b.y, 3); damage(s, s.player, b.dmg); b.t = 99;
     }
   }
   s.bullets = s.bullets.filter(b => b.t < GUN.life);
@@ -362,7 +376,7 @@ function updateMissiles(s, dt) {
     m.x += Math.cos(m.h) * m.spd * dt;
     m.y += Math.sin(m.h) * m.spd * dt;
     m.smokeT -= dt;
-    if (m.smokeT <= 0) { m.smokeT = 0.035; s.fx.push({ type: 'smoke', x: m.x, y: m.y, t: 0, life: 1.1 }); }
+    if (m.smokeT <= 0) { m.smokeT = 0.03; exhaust(s, m); }
 
     if (tgAlive && tg.r && d(m, tg) < tg.r + 0.1) { hitByMissile(s, m, tg); continue; }
     if (tgAlive && tg.t !== undefined && d(m, tg) < 0.2) { m.t = 99; boom(s, m.x, m.y, 0.4); continue; }
@@ -390,7 +404,8 @@ function damage(s, u, amount) {
     u.hp -= amount; u.hitT = 0.25; sfx.hit();
     if (u.hp <= 0) {
       u.alive = false; u.hp = 0;
-      boom(s, u.x, u.y, 1.2, true);
+      boom(s, u.x, u.y, 0.9, true);
+      startFall(s, u);
       s.lives--;
       if (s.lives <= 0) { s.phase = 'losing'; s.endT = 2; }
       else { s.respawnT = 2.5; s.msgs.push({ key: 'lost', t: s.time, bad: true }); }
@@ -400,21 +415,49 @@ function damage(s, u, amount) {
   u.hp -= amount; u.hitT = 0.15;
   if (u.hp <= 0 && u.alive) {
     u.alive = false;
-    const big = u.kind === 'airbase';
-    boom(s, u.x, u.y, big ? 1.4 : 0.9, true);
+    if (u.kind === 'fighter') { boom(s, u.x, u.y, 0.7, true); startFall(s, u); }
+    else destroyGround(s, u);
     s.score += u.kind === 'fighter' ? 100 : GROUND[u.kind].score;
     if (u.side === 'enemy') s.msgs.push({ key: 'destroyed', item: u.kind, t: s.time });
   }
 }
 
-function boom(s, x, y, size, loud = false) {
-  s.fx.push({ type: 'boom', x, y, t: 0, life: 0.9 + size * 0.4, size });
-  const n = Math.round(6 + size * 10);
-  for (let i = 0; i < n; i++) {
-    const a = Math.random() * 6.28, v = (0.2 + Math.random() * 0.8) * size;
-    s.fx.push({ type: 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, life: 0.4 + Math.random() * 0.6 });
-  }
+function boom(s, x, y, size, loud = false, ground = false) {
+  explode(s, x, y, size, ground);
   sfx.boom(loud);
+}
+
+// A ground target goes up in stages: the main blast, then its buildings
+// and fuel tanks one after another, leaving fires burning.
+function destroyGround(s, u) {
+  const big = u.kind === 'airbase';
+  boom(s, u.x, u.y, big ? 1.5 : 1, true, true);
+  addFire(s, u.x, u.y, big ? 0.5 : 0.35, 60);
+  (u.props || []).forEach((pr, i) => {
+    s.timers.push({ t: 0.25 + i * 0.22 + Math.random() * 0.2, fn: () => {
+      pr.dead = true;
+      boom(s, pr.x, pr.y, pr.tank ? 1.1 : 0.6, pr.tank, true);
+      if (pr.tank || Math.random() < 0.6) addFire(s, pr.x, pr.y, pr.tank ? 0.4 : 0.22, 50);
+    } });
+  });
+}
+
+// Shot-down aircraft spin and fall, trailing fire, then hit the ground.
+function startFall(s, a) {
+  s.falling.push({ x: a.x, y: a.y, h: a.h, spd: (a.spd || 0.5) * 0.7, side: a.side, t: 0, life: 1.4, spin: (Math.random() < 0.5 ? -1 : 1) * 5, smokeT: 0 });
+}
+
+function updateFalling(s, dt) {
+  for (const f of s.falling) {
+    f.t += dt;
+    f.h += f.spin * dt;
+    f.x += Math.cos(f.h) * f.spd * dt * 0.5;
+    f.y += Math.sin(f.h) * f.spd * dt * 0.5;
+    f.smokeT -= dt;
+    if (f.smokeT <= 0) { f.smokeT = 0.04; damageSmoke(s, f, 0); }
+    if (f.t >= f.life) boom(s, f.x, f.y, 0.8, false, true);
+  }
+  s.falling = s.falling.filter(f => f.t < f.life);
 }
 
 // Nearest countries to `code` (by label distance), for the enemy picker.
