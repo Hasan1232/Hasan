@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { BOXES, WORLD, WEAPONS, PLAYER, move, collides, rayBoxes, rayPlayer } from './shared.js';
 
 const $ = id => document.getElementById(id);
@@ -10,7 +12,7 @@ const TEAM_NAMES = ['المعارضة', 'النظام'];
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, isTouch ? 1.5 : 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 
@@ -150,9 +152,56 @@ BOXES.forEach((b, i) => {
 const TEAM_COLORS = [0x4f6b3e, 0x8a4a38];
 const darkMat = new THREE.MeshStandardMaterial({ color: 0x23262a, roughness: 0.7 });
 const skinMat = new THREE.MeshStandardMaterial({ color: 0xc09674, roughness: 0.8 });
+// مجسّم الجندي (GLB) مع حركاته؛ إن فشل تحميله تُستخدم المجسّمات الصندوقية
+let soldierGltf = null;
+const TEAM_TINT = [0x9dbb82, 0xd89280], teamMats = [];
+new GLTFLoader().load('/models/soldier.glb', gltf => {
+  gltf.scene.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = true; o.frustumCulled = false;
+    if (o.material.name === 'VanguardBodyMat' && !teamMats.length) {
+      for (const c of TEAM_TINT) { const m = o.material.clone(); m.color.setHex(c); teamMats.push(m); }
+    }
+  });
+  soldierGltf = gltf;
+}, undefined, () => console.warn('تعذّر تحميل مجسّم الجندي'));
+
+function nameTag(g, name) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+  const x = c.getContext('2d');
+  x.font = 'bold 34px Tahoma, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.lineWidth = 6; x.strokeStyle = '#000a'; x.strokeText(name, 128, 32);
+  x.fillStyle = '#9cc4ff'; x.fillText(name, 128, 32);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
+  sp.position.y = 2.15; sp.scale.set(1.8, 0.45, 1);
+  g.add(sp);
+}
+
 function makeSoldier(team, name, friendly) {
   const g = new THREE.Group();
   g.rotation.order = 'YXZ';
+  if (friendly) nameTag(g, name);
+  if (soldierGltf) {
+    const model = cloneSkinned(soldierGltf.scene);
+    model.traverse(o => { if (o.isMesh && o.material.name === 'VanguardBodyMat') o.material = teamMats[team]; });
+    const hand = model.getObjectByName('mixamorigRightHand');
+    if (hand) {
+      const rifle = new THREE.Group();
+      rifle.scale.setScalar(100); rifle.position.set(0, 8, 3); rifle.rotation.y = Math.PI;
+      const bx = (w, h, d, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), darkMat); m.position.set(0, y, z); m.castShadow = true; rifle.add(m); };
+      bx(0.05, 0.09, 0.55, 0, -0.15); bx(0.03, 0.03, 0.3, 0.01, -0.55); bx(0.04, 0.16, 0.06, -0.11, -0.2);
+      hand.add(rifle);
+    }
+    g.add(model);
+    const mixer = new THREE.AnimationMixer(model), actions = {};
+    for (const n of ['Idle', 'Walk', 'Run']) {
+      actions[n] = mixer.clipAction(soldierGltf.animations.find(a => a.name === n));
+      actions[n].play(); actions[n].setEffectiveWeight(n === 'Idle' ? 1 : 0);
+    }
+    scene.add(g);
+    return { g, model, mixer, actions };
+  }
   const cloth = new THREE.MeshStandardMaterial({ color: TEAM_COLORS[team], roughness: 0.95 });
   const part = (parent, w, h, d, x, y, z, mat) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -169,17 +218,6 @@ function makeSoldier(team, name, friendly) {
   part(upper, 0.16, 0.16, 0.6, 0.4, 1.28, -0.25, cloth);       // ذراع يمنى
   part(upper, 0.16, 0.16, 0.62, -0.3, 1.25, -0.32, cloth).rotation.y = -0.5;
   part(upper, 0.07, 0.12, 0.85, 0.22, 1.3, -0.55, darkMat);    // السلاح
-  if (friendly) {
-    const c = document.createElement('canvas'); c.width = 256; c.height = 64;
-    const x = c.getContext('2d');
-    x.font = 'bold 34px Tahoma, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    x.lineWidth = 6; x.strokeStyle = '#000a'; x.strokeText(name, 128, 32);
-    x.fillStyle = '#9cc4ff'; x.fillText(name, 128, 32);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
-    sp.position.y = 2.15; sp.scale.set(1.8, 0.45, 1);
-    g.add(sp);
-  }
   scene.add(g);
   return { g, legs, upper };
 }
@@ -636,14 +674,27 @@ function frame(now) {
     const k = 1 - Math.exp(-14 * dt);
     for (const r of remotes.values()) {
       const p = r.g.position;
+      const lag = Math.hypot(r.tx - p.x, r.tz - p.z);
       p.x += (r.tx - p.x) * k; p.y += (r.ty - p.y) * k; p.z += (r.tz - p.z) * k;
       let dy = r.tyaw - r.g.rotation.y;
       dy = Math.atan2(Math.sin(dy), Math.cos(dy));
       r.g.rotation.y += dy * k;
       r.g.rotation.x += ((r.alive ? 0 : -Math.PI / 2) - r.g.rotation.x) * Math.min(1, 8 * dt);
       const c = r.crouch && r.alive ? 1 : 0;
-      r.upper.position.y += (-0.45 * c - r.upper.position.y) * k;
-      r.legs.scale.y += ((c ? 0.45 : 1) - r.legs.scale.y) * k;
+      if (r.mixer) {
+        r.model.scale.y += ((c ? 0.72 : 1) - r.model.scale.y) * k;
+        if (r.alive) {
+          const anim = lag * 14 > 3.4 ? 'Run' : lag * 14 > 0.5 ? 'Walk' : 'Idle';
+          for (const n in r.actions) {
+            const a = r.actions[n];
+            a.setEffectiveWeight(a.getEffectiveWeight() + ((n === anim ? 1 : 0) - a.getEffectiveWeight()) * Math.min(1, 10 * dt));
+          }
+          r.mixer.update(dt);
+        }
+      } else {
+        r.upper.position.y += (-0.45 * c - r.upper.position.y) * k;
+        r.legs.scale.y += ((c ? 0.45 : 1) - r.legs.scale.y) * k;
+      }
     }
 
     sendAcc += dt;

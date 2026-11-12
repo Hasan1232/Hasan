@@ -16,12 +16,14 @@ const RESPAWN_MS = 4000;
 const TICK_MS = 50;
 
 // ---------- الملفات الثابتة ----------
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.glb': 'model/gltf-binary' };
+const MOUNTS = [['/three/', 'node_modules/three/build'], ['/addons/', 'node_modules/three/examples/jsm']];
 const server = http.createServer((req, res) => {
   let url = decodeURIComponent(req.url.split('?')[0]);
   if (url === '/') url = '/index.html';
-  const base = url.startsWith('/three/') ? path.join(ROOT, 'node_modules/three/build') : path.join(ROOT, 'public');
-  const file = path.join(base, url.replace(/^\/three\//, '/'));
+  const mount = MOUNTS.find(m => url.startsWith(m[0]));
+  const base = path.join(ROOT, mount ? mount[1] : 'public');
+  const file = path.join(base, mount ? url.slice(mount[0].length) : url);
   if (!file.startsWith(base + path.sep)) { res.writeHead(403).end(); return; }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404).end('Not found'); return; }
