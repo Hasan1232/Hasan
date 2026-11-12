@@ -4,7 +4,7 @@ import { BOXES, WORLD, WEAPONS, PLAYER, move, collides, rayBoxes, rayPlayer } fr
 const $ = id => document.getElementById(id);
 const isTouch = matchMedia('(pointer: coarse)').matches;
 const canvas = $('c');
-const TEAM_NAMES = ['ألفا', 'برافو'];
+const TEAM_NAMES = ['المعارضة', 'النظام'];
 
 // ================= المشهد =================
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -147,7 +147,7 @@ BOXES.forEach((b, i) => {
 });
 
 // ================= الجنود =================
-const TEAM_COLORS = [0x3f5a7d, 0x8a4a38];
+const TEAM_COLORS = [0x4f6b3e, 0x8a4a38];
 const darkMat = new THREE.MeshStandardMaterial({ color: 0x23262a, roughness: 0.7 });
 const skinMat = new THREE.MeshStandardMaterial({ color: 0xc09674, roughness: 0.8 });
 function makeSoldier(team, name, friendly) {
@@ -293,7 +293,7 @@ function onMsg(m) {
     setRoster(m.roster);
     $('menu').style.display = 'none'; $('hud').style.display = 'block';
     drawMapBase();
-    flashMsg(`أنت في فريق ${TEAM_NAMES[me.team]}`, 3000);
+    flashMsg(`أنت مع قوات ${TEAM_NAMES[me.team]}`, 3000);
   } else if (m.t === 'full') {
     alert('الخادم ممتلئ، حاول لاحقاً');
   } else if (m.t === 'roster') {
@@ -378,7 +378,7 @@ function renderBoards() {
     host.replaceChildren();
     for (const team of [0, 1]) {
       const t = document.createElement('table');
-      const cap = t.createCaption(); cap.textContent = `فريق ${TEAM_NAMES[team]}`; cap.style.color = team ? '#ff7a66' : '#6fa8ff';
+      const cap = t.createCaption(); cap.textContent = `قوات ${TEAM_NAMES[team]}`; cap.style.color = team ? '#ff7a66' : '#8fd06f';
       const head = t.insertRow();
       for (const h of ['المقاتل', 'قتل', 'موت']) { const th = document.createElement('th'); th.textContent = h; head.append(th); }
       [...roster.values()].filter(r => r.team === team).sort((a, b) => b.k - a.k).forEach(r => {
