@@ -1,488 +1,810 @@
 <title>عدسة السعرات</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
 <style>
-/* Layout: one narrow column (phone first): daily ring → camera action → analysis → today's log */
+/* Layout: phone app — three tabs (اليوم / أضف / أطعمتي) over a fixed bottom tab bar; bottom sheets for portions and food editing */
 :root{
-  --bg:#f3f6f1; --surface:#ffffff; --ink:#1d2a22; --muted:#5f6f64; --line:#dde5dc;
-  --herb:#2f6b4a; --herb-soft:#e3efe6; --saffron:#d98a1c; --saffron-soft:#fbefd9;
-  --protein:#3b6fb6; --carbs:#d98a1c; --fat:#b4504a; --danger:#b4504a;
+  --bg:#f1f4ef; --surface:#ffffff; --surface-2:#e8eee6; --ink:#17231b; --muted:#5b6b60; --line:#d9e2d7;
+  --herb:#2b6847; --on-herb:#f3faf5; --hero:#21533a; --hero-ink:#eef7f0; --hero-muted:#a9c9b5; --hero-track:#2f6a4c;
+  --saffron:#e59a2f; --saffron-ink:#8a560c; --saffron-soft:#fbeed6;
+  --protein:#3a6cb4; --carbs:#d48a1e; --fat:#b24c46; --danger:#b24c46;
+  --c-starch:#c98516; --c-protein:#b24c46; --c-veg:#3f8a4f; --c-dairy:#3a6cb4; --c-sweet:#8a5aa8; --c-drink:#2a8585;
+  --scrim:rgba(14,24,18,.45); --shadow:0 8px 24px rgba(23,35,27,.10);
   --f-display:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
   --f-body:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
+  --nav-h:64px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#121a15; --surface:#1a241e; --ink:#e7efe8; --muted:#9aaa9f; --line:#2a372f;
-  --herb:#6dbb8d; --herb-soft:#203429; --saffron:#f0a940; --saffron-soft:#352a17;
-  --protein:#7ea7e6; --carbs:#f0a940; --fat:#e2847d; --danger:#e2847d; color-scheme:dark}}
+  --bg:#0f1712; --surface:#17211b; --surface-2:#1e2a23; --ink:#e5eee7; --muted:#97a89c; --line:#27352d;
+  --herb:#6dbb8d; --on-herb:#0d1a12; --hero:#173a28; --hero-ink:#e9f5ec; --hero-muted:#8fb69d; --hero-track:#235339;
+  --saffron:#f0aa48; --saffron-ink:#f0aa48; --saffron-soft:#33281a;
+  --protein:#7ea7e6; --carbs:#f0aa48; --fat:#e2847d; --danger:#e2847d;
+  --c-starch:#e8a542; --c-protein:#e2847d; --c-veg:#74c286; --c-dairy:#7ea7e6; --c-sweet:#c09ade; --c-drink:#5cc2c2;
+  --scrim:rgba(0,0,0,.6); --shadow:0 8px 24px rgba(0,0,0,.35); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#121a15; --surface:#1a241e; --ink:#e7efe8; --muted:#9aaa9f; --line:#2a372f;
-  --herb:#6dbb8d; --herb-soft:#203429; --saffron:#f0a940; --saffron-soft:#352a17;
-  --protein:#7ea7e6; --carbs:#f0a940; --fat:#e2847d; --danger:#e2847d; color-scheme:dark}
+  --bg:#0f1712; --surface:#17211b; --surface-2:#1e2a23; --ink:#e5eee7; --muted:#97a89c; --line:#27352d;
+  --herb:#6dbb8d; --on-herb:#0d1a12; --hero:#173a28; --hero-ink:#e9f5ec; --hero-muted:#8fb69d; --hero-track:#235339;
+  --saffron:#f0aa48; --saffron-ink:#f0aa48; --saffron-soft:#33281a;
+  --protein:#7ea7e6; --carbs:#f0aa48; --fat:#e2847d; --danger:#e2847d;
+  --c-starch:#e8a542; --c-protein:#e2847d; --c-veg:#74c286; --c-dairy:#7ea7e6; --c-sweet:#c09ade; --c-drink:#5cc2c2;
+  --scrim:rgba(0,0,0,.6); --shadow:0 8px 24px rgba(0,0,0,.35); color-scheme:dark}
+
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
-.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-h1,h2{font-family:var(--f-display);text-wrap:balance;margin:0}
-h1{font-size:1.6rem;font-weight:700}
-h2{font-size:1.1rem;font-weight:700}
-.sub{color:var(--muted);margin:2px 0 0;font-size:.9rem}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom,0px))}
+.app{max-width:560px;margin:0 auto}
+.view{display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+h1{font-size:1.5rem;font-weight:700}
+h2{font-size:1.05rem;font-weight:600}
 .num{font-variant-numeric:tabular-nums}
-button,input,textarea{font:inherit;color:inherit}
-button{cursor:pointer}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 :focus-visible{outline:2px solid var(--herb);outline-offset:2px}
-
-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.date{font-size:.85rem;color:var(--muted);white-space:nowrap}
-
-/* Daily summary */
-.today{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px}
-.ring{position:relative;width:128px;height:128px}
-.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
-.ring .track{stroke:var(--herb-soft)}
-.ring .bar{stroke:var(--herb);transition:stroke-dashoffset .5s ease}
-.ring.over .bar{stroke:var(--danger)}
-.ring .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.ring .big{font-family:var(--f-display);font-size:1.6rem;font-weight:700;line-height:1.1}
-.ring .small{font-size:.75rem;color:var(--muted)}
-.macros{display:flex;flex-direction:column;gap:8px;min-width:0}
-.macro{display:grid;grid-template-columns:4.2em 1fr auto;gap:8px;align-items:center;font-size:.85rem}
-.macro .meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
-.macro .meter i{display:block;height:100%;width:0}
-.goal-row{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--muted);margin-top:4px}
-.goal-row input{width:5.5em;padding:3px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);text-align:center}
-
-/* Capture */
-.capture{display:flex;flex-direction:column;gap:12px}
-.shoot{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px;border:none;border-radius:16px;
-  background:var(--herb);color:var(--bg);font-family:var(--f-display);font-size:1.15rem;font-weight:700}
-.shoot svg{width:26px;height:26px}
-.shoot{cursor:pointer;position:relative}
-.shoot.busy{opacity:.55;pointer-events:none}
-.appnote{background:var(--herb-soft);display:flex;flex-direction:column;gap:8px}
-.linkrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.linkrow code{direction:ltr;font-size:.75rem;word-break:break-all;min-width:0;flex:1;user-select:all}
-.copy{flex:0 0 auto;min-width:0;padding:6px 12px}
-.pick{text-align:center;cursor:pointer;position:relative}
 .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
-.shoot:focus-within,.pick:focus-within{outline:2px solid var(--herb);outline-offset:2px}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.ghost{flex:1;min-width:140px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:.9rem}
-label.hint{font-size:.85rem;color:var(--muted)}
-textarea{width:100%;min-height:58px;resize:vertical;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
-.tips{font-size:.82rem;color:var(--muted);background:var(--saffron-soft);border-radius:12px;padding:10px 12px;margin:0}
-.tips b{color:var(--ink)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.topbar .btn{flex:0 0 auto;white-space:nowrap}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.sub{color:var(--muted);font-size:.85rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 
-/* Analysis */
-.result{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden}
-.result .photo{display:block;width:100%;max-height:300px;object-fit:cover;background:var(--herb-soft)}
-.result .body{padding:16px;display:flex;flex-direction:column;gap:14px}
-.tag{display:inline-block;font-size:.72rem;padding:2px 10px;border-radius:99px;background:var(--saffron-soft);color:var(--saffron);font-weight:600;letter-spacing:.02em}
+/* Hero */
+.hero{background:var(--hero);color:var(--hero-ink);border-radius:24px;padding:20px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;box-shadow:var(--shadow)}
+.ring{position:relative;width:136px;height:136px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .bar{transition:stroke-dashoffset .6s ease,stroke .3s}
+.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .big{font-family:var(--f-display);font-size:1.9rem;font-weight:700;line-height:1}
+.ring .lbl{font-size:.75rem;color:var(--hero-muted);margin-top:4px}
+.hero-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.hero-left{font-family:var(--f-display);font-size:1.25rem;font-weight:600;line-height:1.3}
+.hero-left small{display:block;font-family:var(--f-body);font-size:.8rem;font-weight:400;color:var(--hero-muted)}
+.goal{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--hero-muted)}
+.goal input{width:5.2em;padding:4px 6px;border-radius:10px;border:1px solid var(--hero-track);background:var(--hero-track);color:var(--hero-ink);text-align:center}
+
+.macros{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mac{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.mac .n{font-family:var(--f-display);font-weight:600;font-size:1.05rem}
+.mac .t{font-size:.75rem;color:var(--muted)}
+.meter{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:3px;transition:width .5s}
+
+.week svg{width:100%;height:auto;display:block}
+.week text{font-family:var(--f-body)}
+
+/* Meals */
+.slot{display:flex;flex-direction:column;gap:8px}
+.slot-h{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);padding-inline:4px}
+.slot-h b{color:var(--ink);font-family:var(--f-display);font-weight:600}
+.row{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-align:start;width:100%}
+.row .tx{min-width:0}
+.row .tx b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .tx span{display:block;font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .kc{font-family:var(--f-display);font-weight:600;text-align:end;white-space:nowrap}
+.row .kc small{display:block;font-family:var(--f-body);font-weight:400;font-size:.72rem;color:var(--muted)}
+.av{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:1.1rem;color:var(--surface);overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.icon-btn{border:none;background:var(--surface-2);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}
+.icon-btn svg{width:18px;height:18px}
+.empty{color:var(--muted);text-align:center;padding:22px 16px;border:1.5px dashed var(--line);border-radius:16px;display:flex;flex-direction:column;gap:12px;align-items:center}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:14px;padding:12px 16px;font-weight:600;background:var(--herb);color:var(--on-herb)}
+.btn.soft{background:var(--surface-2);color:var(--ink)}
+.btn.line{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:18px;height:18px}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.btns .btn{flex:1;min-width:140px}
+
+/* Add view */
+.shoot{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;background:var(--hero);color:var(--hero-ink);border-radius:20px;padding:18px;cursor:pointer;position:relative;box-shadow:var(--shadow)}
+.shoot .cam{width:52px;height:52px;border-radius:16px;background:var(--saffron);color:var(--hero);display:grid;place-items:center}
+.shoot .cam svg{width:28px;height:28px}
+.shoot b{font-family:var(--f-display);font-size:1.15rem;display:block}
+.shoot span{font-size:.82rem;color:var(--hero-muted)}
+.shoot.busy{opacity:.6;pointer-events:none}
+.shoot:focus-within,.pick:focus-within{outline:2px solid var(--herb);outline-offset:2px}
+.pick{position:relative;cursor:pointer}
+details.help{font-size:.84rem;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+details.help summary{cursor:pointer;color:var(--ink);font-weight:500}
+details.help p{margin:8px 0 0}
+.linkrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.linkrow code{direction:ltr;font-size:.74rem;word-break:break-all;flex:1;min-width:0;user-select:all}
+
+.search{position:relative}
+.search input{width:100%;padding:12px 42px 12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+.search svg{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 14px;font-size:.85rem;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.list{display:flex;flex-direction:column;gap:8px}
+.tag{display:inline-block;font-size:.7rem;padding:1px 8px;border-radius:99px;background:var(--saffron-soft);color:var(--saffron-ink);font-weight:600;margin-inline-start:6px;vertical-align:middle}
+.plus{width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;color:var(--herb)}
+.plus svg{width:18px;height:18px}
+
+/* Scan result */
+.scan{background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.scan .photo{display:block;width:100%;max-height:260px;object-fit:cover;background:var(--surface-2)}
+.scan .body{padding:16px;display:flex;flex-direction:column;gap:12px}
 .status{display:flex;align-items:center;gap:10px;color:var(--muted)}
-.spinner{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--herb);animation:spin .9s linear infinite}
+.spinner{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--herb);animation:spin .9s linear infinite;flex:0 0 auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 .total{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.total .kcal{font-family:var(--f-display);font-size:2.1rem;font-weight:700;color:var(--herb)}
-.total .range{font-size:.85rem;color:var(--muted)}
-.items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.total .k{font-family:var(--f-display);font-size:2rem;font-weight:700;color:var(--herb)}
+.total .r{font-size:.82rem;color:var(--muted)}
+.items{list-style:none;margin:0;padding:0}
 .item{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line)}
 .item:first-child{border-top:none}
-.item .name{font-weight:600;min-width:0}
-.item .kc{font-weight:600;text-align:left}
-.item .meta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:.8rem;color:var(--muted)}
-.item .grams{display:inline-flex;align-items:center;gap:4px}
-.item .grams input{width:4.6em;padding:2px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);text-align:center}
+.item .nm{font-weight:600;min-width:0}
+.item .meta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:.8rem;color:var(--muted)}
+.item .meta input{width:4.6em;padding:2px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);text-align:center}
 .conf{padding:1px 8px;border-radius:99px;font-size:.72rem}
-.conf.high{background:var(--herb-soft);color:var(--herb)}
-.conf.medium{background:var(--saffron-soft);color:var(--saffron)}
-.conf.low{background:color-mix(in srgb,var(--danger) 15%,transparent);color:var(--danger)}
-.x{border:none;background:none;color:var(--muted);font-size:.8rem;padding:0;text-decoration:underline}
-.notes{font-size:.85rem;color:var(--muted);margin:0}
-.actions{display:flex;gap:10px;flex-wrap:wrap}
-.primary{flex:1;min-width:140px;padding:12px;border:none;border-radius:12px;background:var(--herb);color:var(--bg);font-weight:600}
-.err{color:var(--danger)}
+.conf.high{background:var(--surface-2);color:var(--herb)}
+.conf.medium{background:var(--saffron-soft);color:var(--saffron-ink)}
+.conf.low{background:var(--surface-2);color:var(--danger)}
+.linkbtn{border:none;background:none;padding:0;color:var(--muted);text-decoration:underline;font-size:.8rem}
+.note{font-size:.84rem;color:var(--muted);margin:0}
+.err{color:var(--danger);margin:0}
 
-/* Log */
-.log{display:flex;flex-direction:column;gap:10px}
-.meal{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px}
-.meal img{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--herb-soft)}
-.meal .t{min-width:0}
-.meal .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.meal .t span{font-size:.78rem;color:var(--muted)}
-.meal .k{text-align:left;font-weight:700;font-family:var(--f-display)}
-.meal .k button{display:block;margin-top:2px}
-.empty{color:var(--muted);font-size:.9rem;text-align:center;padding:18px;border:1px dashed var(--line);border-radius:14px}
-.foot{font-size:.78rem;color:var(--muted);text-align:center}
-@media (max-width:420px){.today{grid-template-columns:1fr;justify-items:center}.macros{width:100%}}
-@media (prefers-reduced-motion:reduce){.spinner{animation:none}.ring .bar{transition:none}}
+/* Tab bar */
+.tabbar{position:fixed;inset:auto 0 0 0;z-index:30;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px max(16px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.tabbar .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;height:var(--nav-h)}
+.tab{border:none;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.78rem;color:var(--muted);border-radius:14px}
+.tab svg{width:24px;height:24px}
+.tab[aria-current="page"]{color:var(--herb);font-weight:600}
+.tab.add .dot{width:46px;height:46px;border-radius:16px;background:var(--herb);color:var(--on-herb);display:grid;place-items:center;margin-top:-18px;box-shadow:var(--shadow)}
+
+/* Sheet */
+.back{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+.sheet{background:var(--surface);width:100%;max-width:560px;max-height:90%;overflow:auto;border-radius:24px 24px 0 0;
+  padding:10px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+  display:flex;flex-direction:column;gap:16px;animation:up .25s ease}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto}
+.sheet-h{display:flex;align-items:center;gap:12px}
+.sheet-h .tx{flex:1;min-width:0}
+.sheet-h .tx span{font-size:.8rem;color:var(--muted)}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+@keyframes fade{from{opacity:0}}
+.seg{display:flex;background:var(--surface-2);border-radius:12px;padding:3px}
+.seg button{flex:1;border:none;background:none;border-radius:10px;padding:8px;font-size:.88rem}
+.seg button[aria-pressed="true"]{background:var(--surface);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.stepper{display:grid;grid-template-columns:52px 1fr 52px;gap:10px;align-items:center}
+.stepper button{height:52px;border-radius:14px;border:none;background:var(--surface-2);font-size:1.5rem;font-weight:600}
+.stepper input{height:52px;width:100%;border-radius:14px;border:1px solid var(--line);background:var(--bg);text-align:center;font-family:var(--f-display);font-size:1.4rem;font-weight:600}
+.unitlbl{text-align:center;font-size:.82rem;color:var(--muted);margin-top:-8px}
+.calc{background:var(--surface-2);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.calc .k{font-family:var(--f-display);font-size:2.4rem;font-weight:700;color:var(--herb);line-height:1}
+.calc .k small{font-size:.9rem;font-weight:400;color:var(--muted)}
+.calc .m{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:.82rem}
+.calc .m i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-end:4px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.82rem;color:var(--muted)}
+.field input{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.grid4 .field input{padding:10px 6px;text-align:center}
+.namerow{display:flex;gap:8px}
+.namerow input{flex:1;min-width:0}
+
+.toast{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 26px + env(safe-area-inset-bottom,0px));
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:14px;display:flex;gap:14px;align-items:center;font-size:.9rem;max-width:calc(100% - 32px);box-shadow:var(--shadow)}
+.toast button{border:none;background:none;color:var(--saffron);font-weight:600;padding:0}
+.foot{font-size:.76rem;color:var(--muted);text-align:center;margin:0}
+
+@media (max-width:400px){.hero{grid-template-columns:1fr;justify-items:center;text-align:center}.hero-side{align-items:center}.macros{gap:8px}.mac{padding:10px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
-<div class="wrap" dir="rtl" lang="ar">
-  <header>
-    <div>
-      <h1>عدسة السعرات</h1>
-      <p class="sub">صوّر طبقك، واعرف سعراته وقيمته الغذائية خلال ثوانٍ.</p>
-    </div>
-    <span class="date" id="today-date"></span>
-  </header>
+<div class="app" dir="rtl" lang="ar">
 
-  <section class="today" aria-label="ملخص اليوم">
-    <div class="ring" id="ring">
-      <svg viewBox="0 0 120 120" aria-hidden="true">
-        <circle class="track" cx="60" cy="60" r="52" fill="none" stroke-width="11"></circle>
-        <circle class="bar" id="ring-bar" cx="60" cy="60" r="52" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"></circle>
-      </svg>
-      <div class="center">
-        <span class="big num" id="eaten">0</span>
-        <span class="small">من <span class="num" id="goal-label">2000</span> سعرة</span>
-        <span class="small" id="left"></span>
+  <!-- اليوم -->
+  <section class="view" id="v-today">
+    <div class="topbar">
+      <div><h1>عدسة السعرات</h1><div class="sub" id="date"></div></div>
+    </div>
+    <div class="hero">
+      <div class="ring">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="var(--hero-track)" stroke-width="12"></circle>
+          <circle class="bar" id="ring-bar" cx="60" cy="60" r="52" fill="none" stroke="var(--saffron)" stroke-width="12" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"></circle>
+        </svg>
+        <div class="c"><span class="big num" id="eaten">0</span><span class="lbl">سعرة اليوم</span></div>
+      </div>
+      <div class="hero-side">
+        <div class="hero-left" id="left"></div>
+        <label class="goal" for="goal">الهدف اليومي <input id="goal" type="number" inputmode="numeric" min="800" max="6000" step="50" value="2000"></label>
       </div>
     </div>
-    <div class="macros">
-      <div class="macro"><span>بروتين</span><span class="meter"><i id="m-p" style="background:var(--protein)"></i></span><span class="num" id="v-p">0 غ</span></div>
-      <div class="macro"><span>كربوهيدرات</span><span class="meter"><i id="m-c" style="background:var(--carbs)"></i></span><span class="num" id="v-c">0 غ</span></div>
-      <div class="macro"><span>دهون</span><span class="meter"><i id="m-f" style="background:var(--fat)"></i></span><span class="num" id="v-f">0 غ</span></div>
-      <div class="goal-row"><label for="goal">هدفي اليومي:</label><input id="goal" type="number" inputmode="numeric" min="800" max="6000" step="50" value="2000"><span>سعرة</span></div>
+    <div class="macros" id="macros"></div>
+    <div class="card week">
+      <div class="sec-head"><h2>آخر ٧ أيام</h2><span class="sub" id="week-avg"></span></div>
+      <div id="week"></div>
     </div>
-  </section>
-
-  <section class="capture" aria-label="تصوير الوجبة">
-    <label class="shoot" id="shoot" for="cam">
-      <input id="cam" class="vh" type="file" accept="image/*" capture="environment">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.8"/></svg>
-      صوّر الوجبة
-    </label>
-    <div class="row">
-      <label class="ghost pick" for="gallery"><input id="gallery" class="vh" type="file" accept="image/*">اختر صورة من المعرض</label>
-    </div>
-    <p class="tips appnote">إذا ما انفتحت الكاميرا داخل تطبيق Claude على أندرويد، انسخ الرابط وافتحه في Chrome بعد تسجيل الدخول في claude.ai.
-      <span class="linkrow"><code id="page-link">https://claude.ai/artifact/7YFowdSK7jr8wYj2wXd67L</code><button class="ghost copy" id="copy" type="button">نسخ الرابط</button></span></p>
-    <label class="hint" for="note">تفاصيل تزيد الدقة (اختياري)</label>
-    <textarea id="note" placeholder="مثال: صحن كبسة دجاج، الرز مطبوخ بزيت، وزن الصحن تقريبًا 350 غرام"></textarea>
-    <p class="tips"><b>للحصول على أدق نتيجة:</b> صوّر من زاوية 45° في إضاءة جيدة، وضع شوكة أو ملعقة أو يدك بجانب الطبق كمقياس للحجم، واذكر الوزن أو طريقة الطبخ (زيت، سمن، قلي) إن عرفتها.</p>
-  </section>
-
-  <section class="result" id="result" aria-live="polite"></section>
-
-  <section aria-label="وجبات اليوم" class="log">
-    <h2>وجبات اليوم</h2>
-    <div id="log"></div>
+    <div class="sec-head"><h2>وجبات اليوم</h2></div>
+    <div id="meals" class="view" style="gap:14px"></div>
     <p class="foot" id="store-note"></p>
   </section>
+
+  <!-- أضف -->
+  <section class="view" id="v-add" hidden>
+    <div class="topbar"><h1>أضف وجبة</h1></div>
+    <label class="shoot" id="shoot" for="cam">
+      <input id="cam" class="vh" type="file" accept="image/*" capture="environment">
+      <span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.8"/></svg></span>
+      <span><b>صوّر الطبق</b><span>يتعرّف على المكوّنات ويقدّر الوزن والسعرات</span></span>
+    </label>
+    <div class="btns">
+      <label class="btn line pick" for="gallery"><input id="gallery" class="vh" type="file" accept="image/*">اختر صورة من المعرض</label>
+    </div>
+    <div id="scan"></div>
+    <details class="help">
+      <summary>نصائح لدقة أعلى</summary>
+      <p>صوّر من زاوية 45° في إضاءة جيدة، وضع ملعقة أو يدك بجانب الطبق كمقياس. اكتب الوزن أو طريقة الطبخ إن عرفتها في الخانة التي تظهر بعد التحليل، ثم أعد التحليل.</p>
+      <p>إذا ما انفتحت الكاميرا داخل تطبيق Claude على أندرويد، افتح الصفحة في Chrome:</p>
+      <div class="linkrow"><code id="page-link">https://claude.ai/artifact/7YFowdSK7jr8wYj2wXd67L</code><button class="btn soft" id="copy" type="button" style="padding:6px 12px">نسخ الرابط</button></div>
+    </details>
+    <div class="sec-head"><h2>أو اختر من قائمتك</h2><button class="linkbtn" type="button" id="add-food-2">طعام جديد</button></div>
+    <div class="search"><input id="q-add" type="search" placeholder="ابحث: رز، دجاج، تمر…" autocomplete="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+    <div class="chips" id="cats-add"></div>
+    <div class="list" id="pick-list"></div>
+  </section>
+
+  <!-- أطعمتي -->
+  <section class="view" id="v-foods" hidden>
+    <div class="topbar"><div><h1>قائمة أطعمتي</h1><div class="sub">القيم لكل 100 غرام. اضغط على أي طعام لتعديله.</div></div>
+      <button class="btn" type="button" id="add-food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>طعام جديد</button></div>
+    <div class="search"><input id="q-lib" type="search" placeholder="ابحث في القائمة" autocomplete="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+    <div class="chips" id="cats-lib"></div>
+    <div class="list" id="lib-list"></div>
+  </section>
+
+  <nav class="tabbar" aria-label="التنقل">
+    <div class="in">
+      <button class="tab" type="button" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8" stroke-width="3.2"/></svg>اليوم</button>
+      <button class="tab add" type="button" data-tab="add"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>أضف</button>
+      <button class="tab" type="button" data-tab="foods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>أطعمتي</button>
+    </div>
+  </nav>
+  <div id="sheet-root"></div>
+  <div class="toast" id="toast" role="status" hidden></div>
 </div>
 
 <script>
 (() => {
-  const $ = s => document.querySelector(s);
-  const fmt = n => Math.round(n).toLocaleString("ar-EG");
-  const dayKey = (d = new Date()) => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
-  const store = {
-    get(k, f){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : f }catch{ return f } },
-    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true }catch{ return false } }
-  };
+"use strict";
+const $ = s => document.querySelector(s);
+const fmt = n => Math.round(n || 0).toLocaleString("en-US");
+const fmt1 = n => (Math.round((n || 0) * 10) / 10).toLocaleString("en-US");
+const dayKey = (off = 0) => { const d = new Date(); d.setDate(d.getDate() + off); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
+const ls = {
+  get(k, f){ try{ const v = localStorage.getItem(k); return v == null ? f : JSON.parse(v); }catch{ return f; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} },
+  del(k){ try{ localStorage.removeItem(k); }catch{} }
+};
+function h(tag, attrs, ...kids){
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})){
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "style") el.style.cssText = v;
+    else if (k.startsWith("on")) el[k] = v;
+    else if (k === "html") el.innerHTML = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) el.append(c.nodeType ? c : String(c));
+  return el;
+}
+const ICON = {
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4h6v3"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/></svg>'
+};
 
-  $("#today-date").textContent = new Date().toLocaleDateString("ar-EG", { weekday:"long", day:"numeric", month:"long" });
+const SLOTS = { breakfast:"فطور", lunch:"غداء", dinner:"عشاء", snack:"سناك" };
+const CATS = { starch:"نشويات وخبز", protein:"لحوم وبروتين", veg:"خضار وفواكه", dairy:"ألبان وبيض", sweet:"دهون وحلويات", drink:"مشروبات" };
+const defaultSlot = () => { const hr = new Date().getHours(); return hr < 11 ? "breakfast" : hr < 16 ? "lunch" : hr < 21 ? "dinner" : "snack"; };
 
-  // ---------- state ----------
-  let goal = store.get("goal", 2000);
-  let meals = [];            // today's saved meals
-  let current = null;        // analysis being reviewed
-  let sample = null, db = null, mealsCol = null;
+// Reference values per 100 g (USDA / common Arabic food tables, approximate)
+const BUILTIN = [
+  ["rice","رز أبيض مطبوخ","starch",130,2.7,28,0.3,"كوب",158],
+  ["kabsa","رز كبسة/بسمتي بالزيت","starch",165,3.2,30,3.6,"صحن",250],
+  ["pita","خبز عربي","starch",275,9,55,1.2,"رغيف",60],
+  ["samoon","خبز صامولي أبيض","starch",265,9,49,3.2,"حبة",50],
+  ["oats","شوفان جاف","starch",389,17,66,7,"ملعقة كبيرة",10],
+  ["pasta","معكرونة مطبوخة","starch",158,5.8,31,0.9,"كوب",140],
+  ["fries","بطاطس مقلية","starch",312,3.4,41,15,"حصة وسط",117],
+  ["potato","بطاطس مسلوقة","starch",87,1.9,20,0.1,"حبة",150],
+  ["chkbreast","صدر دجاج مشوي","protein",165,31,0,3.6,"قطعة",120],
+  ["chkskin","دجاج مشوي بالجلد","protein",239,27,0,14,"ربع دجاجة",200],
+  ["beef","لحم بقر مفروم مطبوخ","protein",250,26,0,15,"",0],
+  ["lamb","لحم غنم مطبوخ","protein",294,25,0,21,"",0],
+  ["fish","سمك أبيض مشوي","protein",118,25,0,1.3,"شريحة",150],
+  ["salmon","سلمون مطبوخ","protein",206,22,0,12,"شريحة",150],
+  ["tuna","تونة معلبة بالماء","protein",116,26,0,0.8,"علبة",120],
+  ["foul","فول مدمس","protein",110,7.6,19.7,0.4,"صحن",200],
+  ["hummus","حمص بطحينة","protein",166,7.9,14.3,9.6,"ملعقة كبيرة",15],
+  ["falafel","فلافل","protein",333,13.3,31.8,17.8,"حبة",17],
+  ["egg","بيض مسلوق","dairy",155,13,1.1,11,"حبة",50],
+  ["yogurt","لبن زبادي كامل الدسم","dairy",61,3.5,4.7,3.3,"علبة",170],
+  ["milk","حليب كامل الدسم","dairy",61,3.2,4.8,3.3,"كوب",244],
+  ["feta","جبنة بيضاء","dairy",264,14,4,21,"شريحة",30],
+  ["labneh","لبنة","dairy",155,6,4,13,"ملعقة كبيرة",20],
+  ["dates","تمر","veg",282,2.5,75,0.4,"حبة",10],
+  ["banana","موز","veg",89,1.1,23,0.3,"حبة",118],
+  ["apple","تفاح","veg",52,0.3,14,0.2,"حبة",180],
+  ["tomato","طماطم","veg",18,0.9,3.9,0.2,"حبة",120],
+  ["cucumber","خيار","veg",15,0.7,3.6,0.1,"حبة",100],
+  ["salad","سلطة خضراء بدون صوص","veg",20,1.2,3.5,0.2,"صحن",150],
+  ["oil","زيت زيتون","sweet",884,0,0,100,"ملعقة كبيرة",13.5],
+  ["nuts","مكسرات مشكلة","sweet",607,20,21,54,"حفنة",30],
+  ["choc","شوكولاتة بالحليب","sweet",535,7.6,59,30,"لوح صغير",45],
+  ["tea","شاي بملعقة سكر","drink",11,0,2.8,0,"كوب",150],
+  ["gahwa","قهوة عربية","drink",2,0.1,0.3,0,"فنجان",50],
+  ["oj","عصير برتقال طبيعي","drink",45,0.7,10.4,0.2,"كوب",248]
+].map(([id,name,cat,kcal,p,c,f,unit,unitG]) => ({ id:"b-"+id, name, cat, kcal, p, c, f, unit, unitG, builtin:true }));
+
+// ---------- state ----------
+const S = {
+  tab: ls.get("cl.tab", "today"),
+  goal: ls.get("cl.goal", ls.get("goal", 2000)),
+  meals: ls.get("cl.meals", []),
+  foods: ls.get("cl.foods", {}),       // custom foods and edits of built-ins, by id
+  q: "", cat: "all", scan: null
+};
+// migrate meals saved by the first version
+try { const old = ls.get("meals-" + dayKey(), null); if (Array.isArray(old) && old.length){ for (const m of old) S.meals.push({ ...m, slot: m.slot || "lunch", name: m.dish || m.name, id: "l" + m.at }); ls.set("cl.meals", S.meals); ls.del("meals-" + dayKey()); } } catch {}
+
+let sample = null, R = null; // R = remote handles when the account store is connected
+const saveLocal = () => { ls.set("cl.meals", S.meals.filter(m => m.day >= dayKey(-60))); ls.set("cl.foods", S.foods); ls.set("cl.goal", S.goal); };
+
+const allFoods = () => {
+  const out = [];
+  const custom = Object.values(S.foods).filter(f => !f.hidden && !BUILTIN.some(b => b.id === f.id)).sort((a,b) => (b.at||0) - (a.at||0));
+  out.push(...custom);
+  for (const b of BUILTIN){ const o = S.foods[b.id]; if (o?.hidden) continue; out.push(o ? { ...b, ...o, builtin:true, edited:true } : b); }
+  return out;
+};
+const per = (f, g) => ({ kcal: f.kcal*g/100, p: f.p*g/100, c: f.c*g/100, f: f.f*g/100 });
+const sum = arr => arr.reduce((a, m) => ({ kcal:a.kcal+(m.kcal||0), p:a.p+(m.p||0), c:a.c+(m.c||0), f:a.f+(m.f||0) }), { kcal:0,p:0,c:0,f:0 });
+
+// ---------- writes ----------
+async function addMeal(m){
+  m = { ...m, day: dayKey(), at: Date.now() };
+  if (R){ try{ await R.meals.add(m); return; }catch{ toast("تعذّر الحفظ في حسابك، حُفظت على هذا الجهاز"); } }
+  S.meals.push({ ...m, id: "l" + m.at }); saveLocal(); render();
+}
+async function delMeal(m){
+  if (R && !m.id.startsWith("l")){ try{ await R.meals.doc(m.id).delete(); }catch{ toast("تعذّر الحذف، حاول مرة أخرى"); return; } }
+  else { S.meals = S.meals.filter(x => x.id !== m.id); saveLocal(); render(); }
+  toast("حُذفت " + m.name, "تراجع", () => { const { id, ...rest } = m; R ? R.meals.add(rest).catch(()=>{}) : (S.meals.push(m), saveLocal(), render()); });
+}
+async function putFood(f){
+  f = { ...f, at: f.at || Date.now() }; delete f.builtin; delete f.edited;
+  S.foods[f.id] = f; saveLocal(); render();
+  if (R) { try{ await R.foods.doc(f.id).set(f); }catch{ toast("تعذّر الحفظ في حسابك"); } }
+}
+async function removeFood(f){
+  if (f.builtin){ return putFood({ id: f.id, hidden: true }); }
+  delete S.foods[f.id]; saveLocal(); render();
+  if (R) { try{ await R.foods.doc(f.id).delete(); }catch{} }
+}
+let goalTimer;
+function setGoal(v){ S.goal = v; saveLocal(); renderToday(); clearTimeout(goalTimer); if (R) goalTimer = setTimeout(() => R.prefs.set({ goal: v }).catch(()=>{}), 800); }
+
+// ---------- toast ----------
+let toastTimer;
+function toast(msg, action, fn){
+  const t = $("#toast"); t.textContent = ""; t.append(h("span", null, msg));
+  if (action) t.append(h("button", { type:"button", onclick: () => { t.hidden = true; fn(); } }, action));
+  t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 4000);
+}
+
+// ---------- tabs ----------
+function setTab(t){
+  S.tab = t; ls.set("cl.tab", t);
+  for (const v of ["today","add","foods"]) $("#v-" + v).hidden = v !== t;
+  document.querySelectorAll(".tab").forEach(b => b.dataset.tab === t ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
+  window.scrollTo(0, 0);
+}
+
+// ---------- render ----------
+function render(){ renderToday(); renderLists(); }
+
+function avatar(food, thumb){
+  if (thumb) return h("span", { class:"av" }, h("img", { src: thumb, alt:"" }));
+  const color = `var(--c-${food?.cat || "starch"})`;
+  return h("span", { class:"av", style:`background:${color}` }, (food?.name || "؟").trim().charAt(0));
+}
+
+function renderToday(){
+  $("#date").textContent = new Date().toLocaleDateString("ar-EG-u-nu-latn", { weekday:"long", day:"numeric", month:"long" });
+  const today = S.meals.filter(m => m.day === dayKey());
+  const t = sum(today), goal = S.goal;
   $("#goal").value = goal;
+  $("#eaten").textContent = fmt(t.kcal);
+  const left = goal - t.kcal;
+  $("#left").textContent = "";
+  $("#left").append(left >= 0 ? fmt(left) + " سعرة متبقية" : "تجاوزت الهدف بـ " + fmt(-left), h("small", null, "من هدف " + fmt(goal) + " سعرة"));
+  $("#ring-bar").style.strokeDashoffset = String(326.7 * (1 - Math.min(t.kcal / goal, 1)));
+  $("#ring-bar").setAttribute("stroke", left < 0 ? "var(--fat)" : "var(--saffron)");
 
-  const EXAMPLE = {
-    example: true,
-    dish: "كبسة دجاج مع سلطة",
-    items: [
-      { name: "رز بسمتي مطبوخ بالزيت", grams: 250, kcal100: 165, p100: 3.2, c100: 30, f100: 3.6, confidence: "medium" },
-      { name: "ربع دجاج مشوي بالجلد", grams: 180, kcal100: 215, p100: 25, c100: 0, f100: 12.5, confidence: "high" },
-      { name: "سلطة خضار بدون صوص", grams: 90, kcal100: 22, p100: 1, c100: 4, f100: 0.2, confidence: "high" },
-      { name: "صلصة طماطم (دقوس)", grams: 40, kcal100: 45, p100: 1, c100: 7, f100: 1.5, confidence: "low" }
-    ],
-    notes: "التقدير مبني على صحن متوسط الحجم. كمية الزيت في الرز هي أكبر مصدر للخطأ."
-  };
+  const tgt = { p: goal*.25/4, c: goal*.5/4, f: goal*.25/9 };
+  const M = [["p","بروتين","var(--protein)"],["c","كربوهيدرات","var(--carbs)"],["f","دهون","var(--fat)"]];
+  $("#macros").replaceChildren(...M.map(([k, name, col]) => h("div", { class:"mac" },
+    h("span", { class:"t" }, name),
+    h("span", { class:"n num" }, fmt(t[k]), h("span", { class:"t" }, " / " + fmt(tgt[k]) + " غ")),
+    h("span", { class:"meter" }, h("i", { style:`width:${Math.min(100, t[k]/tgt[k]*100)}%;background:${col}` })))));
 
-  // ---------- math ----------
-  const itemTotals = it => {
-    const g = it.grams / 100;
-    return { kcal: it.kcal100 * g, p: it.p100 * g, c: it.c100 * g, f: it.f100 * g };
-  };
-  const totals = items => items.reduce((a, it) => {
-    const t = itemTotals(it); a.kcal += t.kcal; a.p += t.p; a.c += t.c; a.f += t.f; return a;
-  }, { kcal:0, p:0, c:0, f:0 });
-  const spread = items => {
-    // uncertainty band from per-item confidence
-    const pct = { high: .1, medium: .2, low: .35 };
-    let lo = 0, hi = 0;
-    for (const it of items){ const k = itemTotals(it).kcal, e = pct[it.confidence] ?? .25; lo += k*(1-e); hi += k*(1+e); }
-    return [lo, hi];
-  };
+  renderWeek();
 
-  // ---------- render: daily summary ----------
-  function renderToday(){
-    const t = meals.reduce((a, m) => { a.kcal += m.kcal; a.p += m.p; a.c += m.c; a.f += m.f; return a }, { kcal:0, p:0, c:0, f:0 });
-    $("#eaten").textContent = fmt(t.kcal);
-    $("#goal-label").textContent = fmt(goal);
-    const left = goal - t.kcal;
-    $("#left").textContent = left >= 0 ? "متبقٍ " + fmt(left) : "تجاوزت بـ " + fmt(-left);
-    const frac = Math.min(t.kcal / goal, 1);
-    $("#ring-bar").style.strokeDashoffset = String(326.7 * (1 - frac));
-    $("#ring").classList.toggle("over", left < 0);
-    // macro targets: 25% protein, 50% carbs, 25% fat of goal
-    const tgt = { p: goal*.25/4, c: goal*.5/4, f: goal*.25/9 };
-    for (const k of ["p","c","f"]){
-      $("#m-"+k).style.width = Math.min(100, t[k]/tgt[k]*100) + "%";
-      $("#v-"+k).textContent = fmt(t[k]) + " / " + fmt(tgt[k]) + " غ";
-    }
+  const box = $("#meals");
+  if (!today.length){
+    box.replaceChildren(h("div", { class:"empty" }, "لم تسجّل أي وجبة اليوم.",
+      h("button", { class:"btn", type:"button", onclick: () => setTab("add") }, "أضف وجبتك الأولى")));
+  } else {
+    box.replaceChildren(...Object.keys(SLOTS).map(slot => {
+      const ms = today.filter(m => (m.slot || "snack") === slot).sort((a,b) => a.at - b.at);
+      if (!ms.length) return null;
+      return h("div", { class:"slot" },
+        h("div", { class:"slot-h" }, h("b", null, SLOTS[slot]), h("span", { class:"num" }, fmt(sum(ms).kcal) + " سعرة")),
+        ...ms.map(m => h("div", { class:"row" },
+          avatar({ name: m.name, cat: m.cat || "starch" }, m.thumb),
+          h("div", { class:"tx" }, h("b", null, m.name), h("span", { class:"num" }, m.amount || (m.src === "camera" ? "من صورة" : ""), " · ب " + fmt(m.p) + " ك " + fmt(m.c) + " د " + fmt(m.f))),
+          h("div", { class:"kc num", style:"display:flex;gap:10px;align-items:center" },
+            h("span", null, fmt(m.kcal), h("small", null, "سعرة")),
+            h("button", { class:"icon-btn", type:"button", "aria-label":"حذف " + m.name, html: ICON.trash, onclick: () => delMeal(m) })))));
+    }).filter(Boolean));
   }
+}
 
-  function renderLog(){
-    const el = $("#log");
-    el.textContent = "";
-    if (!meals.length){
-      const e = document.createElement("div"); e.className = "empty";
-      e.textContent = "لم تسجّل أي وجبة اليوم. صوّر طبقك الأول وسيظهر هنا.";
-      el.append(e); return;
-    }
-    const list = document.createElement("div"); list.className = "log";
-    for (const m of [...meals].sort((a,b) => b.at - a.at)){
-      const row = document.createElement("div"); row.className = "meal";
-      const img = document.createElement("img"); img.alt = ""; if (m.thumb) img.src = m.thumb;
-      const t = document.createElement("div"); t.className = "t";
-      const b = document.createElement("b"); b.textContent = m.dish;
-      const s = document.createElement("span");
-      s.textContent = new Date(m.at).toLocaleTimeString("ar-EG",{hour:"numeric",minute:"2-digit"}) + " · ب " + fmt(m.p) + " · ك " + fmt(m.c) + " · د " + fmt(m.f) + " غ";
-      t.append(b, s);
-      const k = document.createElement("div"); k.className = "k num"; k.textContent = fmt(m.kcal);
-      const del = document.createElement("button"); del.className = "x"; del.type = "button"; del.textContent = "حذف";
-      del.onclick = () => removeMeal(m);
-      k.append(del);
-      row.append(img, t, k); list.append(row);
-    }
-    el.append(list);
-  }
+function renderWeek(){
+  const days = []; for (let i = 6; i >= 0; i--) days.push(dayKey(-i));
+  const vals = days.map(d => sum(S.meals.filter(m => m.day === d)).kcal);
+  const W = 320, H = 150, top = 18, bottom = 24, slotW = W / 7, bw = 22;
+  const max = Math.max(S.goal * 1.2, ...vals.map(v => v * 1.1), 1);
+  const y = v => top + (H - top - bottom) * (1 - v / max);
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "السعرات خلال آخر 7 أيام");
+  const mk = (tag, a) => { const e = document.createElementNS(ns, tag); for (const k in a) e.setAttribute(k, a[k]); svg.append(e); return e; };
+  mk("line", { x1:0, x2:W, y1:H-bottom, y2:H-bottom, stroke:"var(--line)" });
+  const gy = y(S.goal);
+  mk("line", { x1:0, x2:W, y1:gy, y2:gy, stroke:"var(--muted)", "stroke-dasharray":"4 4", "stroke-width":1 });
+  const gl = mk("text", { x:4, y:gy - 4, "font-size":9, fill:"var(--muted)", "text-anchor":"start", style:"direction:ltr" }); gl.textContent = "الهدف";
+  days.forEach((d, i) => {
+    const cx = W - slotW * (i + .5); // oldest on the right (reading order)
+    const v = vals[i], isToday = i === 6;
+    const by = y(v), bh = Math.max(0, H - bottom - by);
+    if (v > 0) mk("rect", { x: cx - bw/2, y: by, width: bw, height: Math.max(bh, 2), rx: 6,
+      fill: v > S.goal ? "var(--fat)" : isToday ? "var(--herb)" : "var(--surface-2)", stroke: isToday || v > S.goal ? "none" : "var(--line)" });
+    if (v > 0){ const t = mk("text", { x: cx, y: by - 5, "font-size": 9, "text-anchor":"middle", fill: isToday ? "var(--ink)" : "var(--muted)", "font-weight": isToday ? 600 : 400 }); t.textContent = fmt(v); }
+    const dt = new Date(); dt.setDate(dt.getDate() - (6 - i));
+    const lb = mk("text", { x: cx, y: H - 8, "font-size": 9.5, "text-anchor":"middle", fill: isToday ? "var(--ink)" : "var(--muted)", "font-weight": isToday ? 600 : 400 });
+    lb.textContent = isToday ? "اليوم" : dt.toLocaleDateString("ar-EG", { weekday:"short" }).replace("ال", "");
+  });
+  $("#week").replaceChildren(svg);
+  const logged = vals.filter(v => v > 0);
+  $("#week-avg").textContent = logged.length ? "المتوسط " + fmt(logged.reduce((a,b)=>a+b,0) / logged.length) + " سعرة" : "";
+}
 
-  // ---------- render: analysis card ----------
-  function renderResult(){
-    const box = $("#result");
-    box.textContent = "";
-    if (!current) { box.hidden = true; return; }
-    box.hidden = false;
-    if (current.photo){ const img = document.createElement("img"); img.className = "photo"; img.src = current.photo; img.alt = "صورة الوجبة"; box.append(img); }
-    const body = document.createElement("div"); body.className = "body"; box.append(body);
+function catChips(el){
+  el.replaceChildren(...[["all","الكل"], ...Object.entries(CATS)].map(([k, v]) =>
+    h("button", { class:"chip", type:"button", "aria-pressed": String(S.cat === k), onclick: () => { S.cat = k; renderLists(); } }, v)));
+}
+function filtered(){
+  const q = S.q.trim();
+  return allFoods().filter(f => (S.cat === "all" || f.cat === S.cat) && (!q || f.name.includes(q)));
+}
+function foodLine(f){
+  return fmt(f.kcal) + " سعرة/100غ" + (f.unit && f.unitG ? " · " + f.unit + " = " + fmt(f.kcal * f.unitG / 100) : "");
+}
+function renderLists(){
+  catChips($("#cats-add")); catChips($("#cats-lib"));
+  const list = filtered();
+  const none = () => h("div", { class:"empty" }, "لا يوجد طعام بهذا الاسم في قائمتك.",
+    h("button", { class:"btn", type:"button", onclick: () => openEditor({ name: S.q.trim() }) }, "أضف «" + (S.q.trim() || "طعام جديد") + "»"));
+  $("#pick-list").replaceChildren(...(list.length ? list.map(f => h("button", { class:"row", type:"button", onclick: () => openPortion(f) },
+    avatar(f), h("span", { class:"tx" }, h("b", null, f.name), h("span", { class:"num" }, foodLine(f))),
+    h("span", { class:"plus", html: ICON.plus }))) : [none()]));
+  $("#lib-list").replaceChildren(...(list.length ? list.map(f => h("button", { class:"row", type:"button", onclick: () => openEditor(f) },
+    avatar(f), h("span", { class:"tx" }, h("b", null, f.name, !f.builtin ? h("span", { class:"tag" }, "من إضافتك") : f.edited ? h("span", { class:"tag" }, "معدّل") : null),
+      h("span", { class:"num" }, "ب " + fmt1(f.p) + " · ك " + fmt1(f.c) + " · د " + fmt1(f.f) + " غ")),
+    h("span", { class:"kc num" }, fmt(f.kcal), h("small", null, "/100غ")))) : [none()]));
+}
 
-    if (current.loading){
-      const s = document.createElement("div"); s.className = "status";
-      s.innerHTML = '<span class="spinner"></span>';
-      s.append(document.createTextNode(current.loading));
-      body.append(s);
-      const stop = document.createElement("button"); stop.className = "ghost"; stop.type = "button"; stop.textContent = "إلغاء";
-      stop.onclick = () => current.ctl?.abort();
-      body.append(stop);
-      return;
-    }
-    if (current.error){
-      const p = document.createElement("p"); p.className = "err"; p.textContent = current.error; body.append(p);
-      return;
-    }
+// ---------- sheets ----------
+function openSheet(build){
+  const root = $("#sheet-root");
+  const close = () => { root.replaceChildren(); document.removeEventListener("keydown", esc); };
+  const esc = e => { if (e.key === "Escape") close(); };
+  const sheet = h("div", { class:"sheet", role:"dialog", "aria-modal":"true" }, h("div", { class:"grab" }));
+  const back = h("div", { class:"back", onclick: e => { if (e.target === back) close(); } }, sheet);
+  build(sheet, close);
+  root.replaceChildren(back); document.addEventListener("keydown", esc);
+  setTimeout(() => sheet.querySelector("[data-focus]")?.focus(), 60);
+}
+const closeBtn = close => h("button", { class:"icon-btn", type:"button", "aria-label":"إغلاق", html: ICON.close, onclick: close });
+function slotChips(get, set){
+  const wrap = h("div", { class:"chips", role:"group", "aria-label":"الوجبة" });
+  const draw = () => wrap.replaceChildren(...Object.entries(SLOTS).map(([k, v]) => h("button", { class:"chip", type:"button", "aria-pressed": String(get() === k), onclick: () => { set(k); draw(); } }, v)));
+  draw(); return wrap;
+}
 
-    const head = document.createElement("div");
-    if (current.example){ const tg = document.createElement("span"); tg.className = "tag"; tg.textContent = "مثال توضيحي"; head.append(tg); }
-    const h = document.createElement("h2"); h.textContent = current.dish; head.append(h);
-    body.append(head);
+function openPortion(food){
+  const st = { unit: food.unit && food.unitG ? "unit" : "g", amt: food.unit && food.unitG ? 1 : 100, slot: defaultSlot() };
+  openSheet((sh, close) => {
+    const grams = () => st.unit === "unit" ? st.amt * food.unitG : st.amt;
+    const input = h("input", { id:"amt", type:"number", inputmode:"decimal", min:"0", step: "any", value: String(st.amt), "aria-label":"الكمية", "data-focus": true });
+    const unitLbl = h("div", { class:"unitlbl num" });
+    const calc = h("div", { class:"calc" });
+    const quick = h("div", { class:"chips", style:"justify-content:center" });
+    const addBtn = h("button", { class:"btn", type:"button" });
+    const upd = () => {
+      const g = grams(), n = per(food, g);
+      unitLbl.textContent = st.unit === "unit" ? food.unit + " · " + fmt(g) + " غرام" : "غرام";
+      calc.replaceChildren(
+        h("div", { class:"k num" }, fmt(n.kcal), h("small", null, " سعرة")),
+        h("div", { class:"m num" },
+          h("span", null, h("i", { style:"background:var(--protein)" }), "بروتين " + fmt1(n.p) + " غ"),
+          h("span", null, h("i", { style:"background:var(--carbs)" }), "كربوهيدرات " + fmt1(n.c) + " غ"),
+          h("span", null, h("i", { style:"background:var(--fat)" }), "دهون " + fmt1(n.f) + " غ")));
+      addBtn.textContent = "أضف إلى " + SLOTS[st.slot]; addBtn.disabled = !(g > 0);
+    };
+    const drawQuick = () => {
+      const opts = st.unit === "unit" ? [0.5, 1, 2, 3] : [50, 100, 150, 200, 300];
+      quick.replaceChildren(...opts.map(v => h("button", { class:"chip num", type:"button", "aria-pressed": String(st.amt === v),
+        onclick: () => { st.amt = v; input.value = v; drawQuick(); upd(); } }, st.unit === "unit" ? (v === 0.5 ? "نصف" : fmt(v)) : v + " غ")));
+    };
+    input.oninput = () => { const v = parseFloat(input.value); st.amt = v >= 0 ? v : 0; drawQuick(); upd(); };
+    const step = d => { const s = st.unit === "unit" ? 0.5 : 10; st.amt = Math.max(0, Math.round((st.amt + d * s) * 10) / 10); input.value = st.amt; drawQuick(); upd(); };
+    addBtn.onclick = () => {
+      const g = grams(), n = per(food, g);
+      addMeal({ slot: st.slot, name: food.name, cat: food.cat, foodId: food.id, grams: Math.round(g), src:"list",
+        amount: st.unit === "unit" ? fmt1(st.amt) + " " + food.unit + " (" + fmt(g) + " غ)" : fmt(g) + " غ", ...n });
+      close(); toast("أُضيف " + food.name + " · " + fmt(n.kcal) + " سعرة", "عرض اليوم", () => setTab("today"));
+    };
+    const seg = food.unit && food.unitG ? h("div", { class:"seg" },
+      ...[["unit", food.unit], ["g", "غرام"]].map(([k, v]) => h("button", { type:"button", "aria-pressed": String(st.unit === k), onclick: e => {
+        if (st.unit === k) return;
+        const g = grams(); st.unit = k; st.amt = k === "unit" ? Math.round(g / food.unitG * 10) / 10 : Math.round(g);
+        input.value = st.amt; e.currentTarget.parentNode.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === e.currentTarget)));
+        drawQuick(); upd(); } }, v))) : null;
+    sh.append(
+      h("div", { class:"sheet-h" }, avatar(food), h("div", { class:"tx" }, h("h2", null, food.name), h("span", { class:"num" }, foodLine(food))), closeBtn(close)),
+      seg || "",
+      h("div", { class:"stepper" }, h("button", { type:"button", "aria-label":"إنقاص", onclick: () => step(-1) }, "−"), input, h("button", { type:"button", "aria-label":"زيادة", onclick: () => step(1) }, "+")),
+      unitLbl, quick, calc,
+      slotChips(() => st.slot, v => { st.slot = v; upd(); }),
+      addBtn);
+    drawQuick(); upd();
+  });
+}
 
-    const tot = totals(current.items), [lo, hi] = spread(current.items);
-    const total = document.createElement("div"); total.className = "total";
-    total.innerHTML = '<span><span class="kcal num"></span> <span>سعرة</span></span><span class="range num"></span>';
-    total.querySelector(".kcal").textContent = fmt(tot.kcal);
-    total.querySelector(".range").textContent = "النطاق المتوقع: " + fmt(lo) + " – " + fmt(hi);
-    body.append(total);
+function openEditor(food){
+  const isNew = !food.id;
+  const f = { id: food.id || "u" + Date.now(), name: food.name || "", cat: food.cat || "starch", kcal: food.kcal ?? "", p: food.p ?? "", c: food.c ?? "", f: food.f ?? "", unit: food.unit || "", unitG: food.unitG || "" , builtin: food.builtin };
+  openSheet((sh, close) => {
+    const fld = (id, label, val, attrs = {}) => h("div", { class:"field" }, h("label", { for: id }, label), h("input", { id, value: String(val ?? ""), ...attrs }));
+    const nameIn = h("input", { id:"f-name", value: f.name, placeholder:"مثال: مندي لحم، كرواسون، لبن عيران", "data-focus": isNew || null, autocomplete:"off" });
+    const status = h("p", { class:"note" });
+    const aiBtn = h("button", { class:"btn soft", type:"button", html: ICON.spark + "<span>املأ القيم تلقائياً</span>" });
+    const cats = h("div", { class:"chips" });
+    const drawCats = () => cats.replaceChildren(...Object.entries(CATS).map(([k, v]) => h("button", { class:"chip", type:"button", "aria-pressed": String(f.cat === k), onclick: () => { f.cat = k; drawCats(); } }, v)));
+    drawCats();
+    const num = { inputmode:"decimal", type:"number", min:"0", step:"any" };
+    const body = h("div", { class:"view", style:"gap:14px" },
+      h("div", { class:"field" }, h("label", { for:"f-name" }, "اسم الطعام"), h("div", { class:"namerow" }, nameIn)),
+      h("div", { class:"btns" }, aiBtn), status,
+      h("div", { class:"field" }, h("label", null, "التصنيف"), cats),
+      fld("f-kcal", "السعرات لكل 100 غرام", f.kcal, num),
+      h("div", { class:"grid4", style:"grid-template-columns:repeat(3,1fr)" },
+        fld("f-p", "بروتين (غ)", f.p, num), fld("f-c", "كربوهيدرات (غ)", f.c, num), fld("f-f", "دهون (غ)", f.f, num)),
+      h("div", { class:"grid2" },
+        fld("f-unit", "اسم الحصة (اختياري)", f.unit, { placeholder:"حبة، كوب، ملعقة" }),
+        fld("f-unitG", "وزن الحصة بالغرام", f.unitG, num)));
+    const save = h("button", { class:"btn", type:"button" }, isNew ? "احفظ في قائمتي" : "احفظ التعديل");
+    const del = !isNew ? h("button", { class:"btn danger", type:"button", html: ICON.trash + "<span>حذف من القائمة</span>" }) : null;
+    const pick = !isNew ? h("button", { class:"btn soft", type:"button" }, "أضف إلى وجبة") : null;
+    const read = () => {
+      const g = id => parseFloat(sh.querySelector("#" + id).value);
+      return { ...f, name: nameIn.value.trim(), kcal: g("f-kcal"), p: g("f-p") || 0, c: g("f-c") || 0, f: g("f-f") || 0,
+        unit: sh.querySelector("#f-unit").value.trim(), unitG: g("f-unitG") || 0 };
+    };
+    aiBtn.onclick = async () => {
+      const name = nameIn.value.trim();
+      if (!name){ status.textContent = "اكتب اسم الطعام أولاً."; nameIn.focus(); return; }
+      if (!sample){ status.textContent = "التعبئة التلقائية تعمل عند فتح الصفحة داخل Claude مع تسجيل الدخول."; return; }
+      aiBtn.disabled = true; status.replaceChildren(h("span", { class:"status" }, h("span", { class:"spinner" }), "جارٍ البحث عن القيم الغذائية…"));
+      try{
+        const r = await sample.json(`أنت أخصائي تغذية. أعطني القيم الغذائية لكل 100 غرام من: "${name}" كما يؤكل عادة (مطبوخ إن كان يُطبخ، وبالطريقة الشائعة في المطبخ العربي إن كان طبقاً عربياً). اعتمد على USDA أو جداول التغذية المعتمدة.
+أجب بـ JSON فقط: {"cat":"starch|protein|veg|dairy|sweet|drink","kcal":0,"p":0,"c":0,"f":0,"unit":"اسم حصة شائعة بالعربية مثل حبة أو كوب أو ملعقة كبيرة أو صحن","unitG":0,"note":"جملة قصيرة بالعربية عن الافتراض الذي اعتمدته"}`, { modelTier:"default" });
+        const set = (id, v) => { const el = sh.querySelector("#" + id); if (v != null && v !== "") el.value = v; };
+        set("f-kcal", Math.round(+r.kcal)); set("f-p", +r.p); set("f-c", +r.c); set("f-f", +r.f);
+        if (r.unit) set("f-unit", r.unit); if (+r.unitG) set("f-unitG", Math.round(+r.unitG));
+        if (CATS[r.cat]){ f.cat = r.cat; drawCats(); }
+        status.textContent = (r.note ? r.note + " " : "") + "راجع القيم وعدّلها إن لزم قبل الحفظ.";
+      }catch(e){
+        status.textContent = e?.code === "not_granted" ? "لم يُسمح للصفحة باستخدام Claude. اسمح بذلك من قائمة الأذونات." : e?.code === "rate_limited" ? "طلبات كثيرة، انتظر قليلاً." : "تعذّر جلب القيم، اكتبها يدوياً أو حاول مرة أخرى.";
+      }finally{ aiBtn.disabled = false; }
+    };
+    save.onclick = () => {
+      const v = read();
+      if (!v.name){ status.textContent = "اكتب اسم الطعام."; nameIn.focus(); return; }
+      if (!(v.kcal >= 0) || isNaN(v.kcal)){ status.textContent = "اكتب السعرات لكل 100 غرام، أو اضغط «املأ القيم تلقائياً»."; return; }
+      if (v.unit && !v.unitG){ status.textContent = "اكتب وزن الحصة بالغرام، أو اترك اسم الحصة فارغاً."; return; }
+      putFood(v); close(); toast(isNew ? "أُضيف " + v.name + " إلى قائمتك" : "حُفظ التعديل", isNew ? "أضفه لوجبة" : null, () => openPortion(allFoods().find(x => x.id === v.id) || v));
+    };
+    if (del) del.onclick = () => { removeFood(f); close(); toast("حُذف " + f.name, "تراجع", () => f.builtin ? putFood({ ...read(), id: f.id }) : putFood(read())); };
+    if (pick) pick.onclick = () => { close(); openPortion(allFoods().find(x => x.id === f.id) || read()); };
+    sh.append(h("div", { class:"sheet-h" }, h("div", { class:"tx" }, h("h2", null, isNew ? "طعام جديد" : "تعديل " + f.name), h("span", null, "القيم لكل 100 غرام")), closeBtn(close)),
+      body, h("div", { class:"btns" }, save, pick), del || "");
+  });
+}
 
-    const mac = document.createElement("div"); mac.className = "row"; mac.style.fontSize = ".85rem"; mac.style.color = "var(--muted)";
-    mac.textContent = "بروتين " + fmt(tot.p) + " غ · كربوهيدرات " + fmt(tot.c) + " غ · دهون " + fmt(tot.f) + " غ";
-    body.append(mac);
-
-    const ul = document.createElement("ul"); ul.className = "items";
-    const confText = { high:"ثقة عالية", medium:"ثقة متوسطة", low:"ثقة منخفضة" };
-    current.items.forEach((it, i) => {
-      const li = document.createElement("li"); li.className = "item";
-      const n = document.createElement("span"); n.className = "name"; n.textContent = it.name;
-      const k = document.createElement("span"); k.className = "kc num"; k.textContent = fmt(itemTotals(it).kcal) + " سعرة";
-      const meta = document.createElement("div"); meta.className = "meta";
-      const gl = document.createElement("label"); gl.className = "grams";
-      const gi = document.createElement("input"); gi.type = "number"; gi.inputMode = "numeric"; gi.min = "0"; gi.step = "5"; gi.value = Math.round(it.grams);
-      gi.id = "g-" + i; gi.setAttribute("aria-label", "الوزن بالغرام لـ " + it.name);
-      gi.oninput = () => { const v = parseFloat(gi.value); if (v >= 0){ it.grams = v; refreshNumbers(); } };
-      gl.append(gi, document.createTextNode(" غ"));
-      const c = document.createElement("span"); c.className = "conf " + (it.confidence || "medium"); c.textContent = confText[it.confidence] || confText.medium;
-      const per = document.createElement("span"); per.className = "num"; per.textContent = fmt(it.kcal100) + " سعرة/100غ";
-      const rm = document.createElement("button"); rm.className = "x"; rm.type = "button"; rm.textContent = "إزالة";
-      rm.onclick = () => { current.items.splice(i, 1); renderResult(); };
-      meta.append(gl, per, c, rm);
-      li.append(n, k, meta); ul.append(li);
-    });
-    body.append(ul);
-
-    if (current.notes){ const p = document.createElement("p"); p.className = "notes"; p.textContent = current.notes; body.append(p); }
-
-    const act = document.createElement("div"); act.className = "actions";
-    if (current.example){
-      const p = document.createElement("p"); p.className = "notes"; p.textContent = "هذه نتيجة مثال تُظهر شكل التحليل. صوّر وجبتك لتحصل على نتيجتك.";
-      body.append(p);
-    } else {
-      const save = document.createElement("button"); save.className = "primary"; save.type = "button"; save.textContent = "أضف إلى وجبات اليوم";
-      save.onclick = saveCurrent;
-      const again = document.createElement("button"); again.className = "ghost"; again.type = "button"; again.textContent = "أعد التحليل بالتفاصيل المكتوبة";
-      again.onclick = () => analyze(current.blob, current.photo, current.thumb);
-      act.append(save, again); body.append(act);
-    }
-    function refreshNumbers(){
-      const t2 = totals(current.items), [l2, h2] = spread(current.items);
-      total.querySelector(".kcal").textContent = fmt(t2.kcal);
-      total.querySelector(".range").textContent = "النطاق المتوقع: " + fmt(l2) + " – " + fmt(h2);
-      mac.textContent = "بروتين " + fmt(t2.p) + " غ · كربوهيدرات " + fmt(t2.c) + " غ · دهون " + fmt(t2.f) + " غ";
-      ul.querySelectorAll(".kc").forEach((el, j) => el.textContent = fmt(itemTotals(current.items[j]).kcal) + " سعرة");
-    }
-  }
-
-  // ---------- image handling ----------
-  function loadImage(file){
-    return new Promise((res, rej) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => res(img);
-      img.onerror = () => rej(new Error("bad image"));
-      img.src = url;
-    });
-  }
-  function toBlob(img, max, q){
-    const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-    const c = document.createElement("canvas");
-    c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
-    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-    return new Promise(r => c.toBlob(b => r({ blob: b, url: c.toDataURL("image/jpeg", q) }), "image/jpeg", q));
-  }
-
-  async function onFile(file){
-    if (!file) return;
-    try{
-      const img = await loadImage(file);
-      const big = await toBlob(img, 1400, .85);
-      const thumb = (await toBlob(img, 160, .7)).url;
-      analyze(big.blob, big.url, thumb);
-    }catch{
-      current = { error: "تعذّر قراءة الصورة. جرّب صورة بصيغة JPG أو PNG." }; renderResult();
-    }
-  }
-
-  // ---------- Claude analysis ----------
-  const PROMPT = (note) => `أنت أخصائي تغذية خبير في تقدير الحصص من الصور، وتعرف المطبخ العربي والخليجي والعالمي جيدًا.
-حلّل صورة الوجبة المرفقة وقدّر قيمتها الغذائية بأقصى دقة ممكنة.
-
-خطوات العمل:
-1. حدّد كل مكوّن ظاهر على حدة (لا تدمج المكوّنات المختلفة).
-2. قدّر الوزن بالغرام لكل مكوّن باستخدام مراجع الحجم في الصورة (حجم الطبق القياسي ~26 سم، الملعقة، الشوكة، اليد، الكوب).
-3. استخدم قيم USDA أو جداول التغذية المعتمدة لكل 100 غرام بحالة الطعام كما يظهر (مطبوخ/نيء/مقلي).
+// ---------- camera ----------
+function loadImage(file){ return new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = URL.createObjectURL(file); }); }
+function shrink(img, max, q){
+  const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return new Promise(r => c.toBlob(b => r({ blob: b, url: c.toDataURL("image/jpeg", q) }), "image/jpeg", q));
+}
+async function onFile(file){
+  if (!file) return;
+  try{ const img = await loadImage(file); const big = await shrink(img, 1400, .85); const th = await shrink(img, 140, .7); analyze(big.blob, big.url, th.url); }
+  catch{ S.scan = { error:"تعذّر قراءة الصورة. جرّب صورة بصيغة JPG أو PNG." }; renderScan(); }
+}
+const PROMPT = note => `أنت أخصائي تغذية خبير في تقدير الحصص من الصور، وتعرف المطبخ العربي والخليجي والشامي والعالمي.
+حلّل صورة الوجبة وقدّر قيمتها الغذائية بأقصى دقة ممكنة:
+1. حدّد كل مكوّن ظاهر على حدة.
+2. قدّر الوزن بالغرام لكل مكوّن مستعيناً بمراجع الحجم (طبق قياسي ~26 سم، ملعقة، شوكة، يد، كوب).
+3. استخدم قيم USDA أو جداول التغذية المعتمدة لكل 100 غرام بحالة الطعام الظاهرة (مطبوخ/مقلي/نيء).
 4. احسب الزيوت والسمن والصوصات المخفية المعتادة لطريقة الطبخ.
-5. حدد مستوى الثقة لكل مكوّن: high أو medium أو low.
-${note ? `\nمعلومات من المستخدم (اعتمد عليها فوق تقديرك البصري إن تعارضت): ${note}\n` : ""}
-إذا لم تكن الصورة طعامًا، أرجع items فارغة واشرح ذلك في notes.
+5. حدد الثقة لكل مكوّن: high أو medium أو low.
+${note ? "معلومات من المستخدم (قدّمها على تقديرك البصري): " + note + "\n" : ""}إذا لم تكن الصورة طعاماً أرجع items فارغة واشرح في notes.
+أجب بـ JSON فقط، بالعربية:
+{"dish":"اسم الوجبة المختصر","items":[{"name":"","grams":0,"kcal100":0,"p100":0,"c100":0,"f100":0,"confidence":"high|medium|low"}],"notes":"أهم مصدر لعدم اليقين ونصيحة لزيادة الدقة"}`;
 
-أجب بـ JSON فقط بهذا الشكل، والأسماء والملاحظات بالعربية:
-{"dish":"اسم الوجبة المختصر","items":[{"name":"اسم المكوّن","grams":0,"kcal100":0,"p100":0,"c100":0,"f100":0,"confidence":"high|medium|low"}],"notes":"جملة أو جملتان: أهم مصدر لعدم اليقين ونصيحة لزيادة الدقة"}
-حيث kcal100 السعرات لكل 100غ، وp100 البروتين وc100 الكربوهيدرات وf100 الدهون بالغرام لكل 100غ.`;
+async function analyze(blob, photo, thumb){
+  const keepNote = S.scan?.note || "";
+  if (!sample){ S.scan = { photo, error:"التحليل يحتاج فتح الصفحة داخل Claude مع تسجيل الدخول (في Chrome أو تطبيق Claude)." }; renderScan(); return; }
+  const ctl = new AbortController();
+  S.scan = { photo, blob, thumb, note: keepNote, loading: true, ctl }; renderScan();
+  $("#scan").scrollIntoView({ behavior:"smooth", block:"start" });
+  $("#shoot").classList.add("busy");
+  try{
+    const r = await sample.json(PROMPT(keepNote), { images:[blob], modelTier:"complex", signal: ctl.signal });
+    const items = (Array.isArray(r?.items) ? r.items : []).map(x => ({ name: String(x.name || "مكوّن"), grams: Math.max(0, +x.grams || 0),
+      kcal: Math.max(0, +x.kcal100 || 0), p: Math.max(0, +x.p100 || 0), c: Math.max(0, +x.c100 || 0), f: Math.max(0, +x.f100 || 0),
+      confidence: ["high","medium","low"].includes(x.confidence) ? x.confidence : "medium" }));
+    S.scan = items.length ? { photo, blob, thumb, note: keepNote, dish: String(r.dish || "وجبة"), items, notes: r.notes ? String(r.notes) : "", slot: defaultSlot() }
+                          : { photo, blob, thumb, note: keepNote, error: r?.notes || "لم أتعرف على طعام في الصورة. جرّب صورة أوضح." };
+  }catch(e){
+    const msg = { cancelled:null, not_granted:"لم يُسمح للصفحة باستخدام Claude. اسمح بذلك من قائمة الأذونات ثم أعد المحاولة.",
+      rate_limited:"طلبات كثيرة في وقت قصير. انتظر دقيقة ثم أعد المحاولة.", images_unavailable:"إرسال الصور غير متاح في هذا العرض. افتح الصفحة في Chrome." }[e?.code];
+    S.scan = msg === null ? null : { photo, blob, thumb, note: keepNote, error: msg || "تعذّر تحليل الصورة. تأكد من الاتصال وأعد المحاولة." };
+  }finally{ $("#shoot").classList.remove("busy"); }
+  renderScan();
+}
 
-  async function analyze(blob, photo, thumb){
-    if (!sample){
-      current = { photo, error: "التحليل يحتاج فتح الصفحة داخل Claude مع تسجيل الدخول. افتح الرابط من تطبيق Claude أو claude.ai." };
-      renderResult(); return;
-    }
-    const ctl = new AbortController();
-    current = { photo, blob, thumb, loading: "جارٍ التعرّف على الطعام وتقدير الكميات…", ctl };
-    renderResult();
-    $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
-    $("#shoot").classList.add("busy");
-    try{
-      const note = $("#note").value.trim();
-      const r = await sample.json(PROMPT(note), { images: [blob], modelTier: "complex", signal: ctl.signal });
-      const items = (Array.isArray(r?.items) ? r.items : []).map(x => ({
-        name: String(x.name || "مكوّن"),
-        grams: Math.max(0, +x.grams || 0),
-        kcal100: Math.max(0, +x.kcal100 || 0),
-        p100: Math.max(0, +x.p100 || 0), c100: Math.max(0, +x.c100 || 0), f100: Math.max(0, +x.f100 || 0),
-        confidence: ["high","medium","low"].includes(x.confidence) ? x.confidence : "medium"
-      }));
-      if (!items.length){
-        current = { photo, blob, thumb, error: r?.notes || "لم أتعرف على طعام في الصورة. جرّب صورة أوضح للطبق." };
-      } else {
-        current = { photo, blob, thumb, dish: String(r.dish || "وجبة"), items, notes: r.notes ? String(r.notes) : "" };
-      }
-    }catch(e){
-      const msg = {
-        cancelled: null,
-        not_granted: "لم يُسمح للصفحة باستخدام Claude. اسمح بذلك من قائمة الأذونات ثم أعد المحاولة.",
-        rate_limited: "طلبات كثيرة في وقت قصير. انتظر دقيقة ثم أعد المحاولة.",
-        images_unavailable: "إرسال الصور غير متاح في هذا العرض. افتح الصفحة في تطبيق Claude أو المتصفح.",
-      }[e?.code];
-      current = msg === null ? null : { photo, blob, thumb, error: msg || "تعذّر تحليل الصورة. تأكد من الاتصال وأعد المحاولة." };
-    }finally{
-      $("#shoot").classList.remove("busy");
-    }
-    renderResult();
+function renderScan(){
+  const box = $("#scan"), sc = S.scan;
+  if (!sc){ box.replaceChildren(); return; }
+  const body = h("div", { class:"body" });
+  const card = h("div", { class:"scan" }, sc.photo ? h("img", { class:"photo", src: sc.photo, alt:"صورة الوجبة" }) : null, body);
+  box.replaceChildren(card);
+  if (sc.loading){
+    body.append(h("div", { class:"status" }, h("span", { class:"spinner" }), "جارٍ التعرّف على الطعام وتقدير الكميات… قد يستغرق ذلك حتى دقيقة."),
+      h("button", { class:"btn soft", type:"button", onclick: () => sc.ctl.abort() }, "إلغاء"));
+    return;
   }
-
-  // ---------- persistence ----------
-  async function saveCurrent(){
-    const t = totals(current.items);
-    const meal = { day: dayKey(), at: Date.now(), dish: current.dish, kcal: t.kcal, p: t.p, c: t.c, f: t.f,
-      items: current.items.map(i => ({ name: i.name, grams: Math.round(i.grams) })), thumb: current.thumb || "" };
-    current = null; renderResult();
-    if (mealsCol){
-      try{ await mealsCol.add(meal); return; }catch{ /* fall through to local */ }
-    }
-    meal.id = "l" + meal.at;
-    meals.push(meal); saveLocal(); renderToday(); renderLog();
+  const noteIn = h("input", { id:"scan-note", value: sc.note || "", placeholder:"تفاصيل تزيد الدقة: الوزن، طريقة الطبخ…", oninput: e => sc.note = e.target.value });
+  const retry = sc.blob ? h("button", { class:"btn line", type:"button", onclick: () => analyze(sc.blob, sc.photo, sc.thumb) }, "أعد التحليل") : null;
+  if (sc.error){
+    body.append(h("p", { class:"err" }, sc.error), sc.blob ? h("div", { class:"field" }, h("label", { for:"scan-note" }, "أضف تفاصيل ثم أعد التحليل"), noteIn) : null,
+      h("div", { class:"btns" }, retry, h("button", { class:"btn soft", type:"button", onclick: () => { S.scan = null; renderScan(); } }, "إغلاق")));
+    return;
   }
-  async function removeMeal(m){
-    if (mealsCol && m.remote){ try{ await mealsCol.doc(m.id).delete(); return; }catch{} }
-    meals = meals.filter(x => x !== m); saveLocal(); renderToday(); renderLog();
-  }
-  function saveLocal(){ store.set("meals-" + dayKey(), meals.filter(m => !m.remote)); }
-  function loadLocal(){ meals = store.get("meals-" + dayKey(), []); }
-
-  // ---------- events ----------
-  $("#copy").onclick = () => {
-    const t = $("#page-link").textContent, b = $("#copy");
-    const done = () => { b.textContent = "تم النسخ"; setTimeout(() => b.textContent = "نسخ الرابط", 2000); };
-    const fallback = () => { const r = document.createRange(); r.selectNodeContents($("#page-link")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "الرابط محدّد، انسخه"; };
-    try { navigator.clipboard.writeText(t).then(done, fallback); } catch { fallback(); }
+  const tot = () => sc.items.reduce((a, it) => { const n = per(it, it.grams); a.kcal += n.kcal; a.p += n.p; a.c += n.c; a.f += n.f; return a; }, { kcal:0,p:0,c:0,f:0 });
+  const range = () => { const e = { high:.1, medium:.2, low:.35 }; let lo = 0, hi = 0; for (const it of sc.items){ const k = per(it, it.grams).kcal; lo += k*(1-e[it.confidence]); hi += k*(1+e[it.confidence]); } return [lo, hi]; };
+  const totalEl = h("div", { class:"total" }), macEl = h("p", { class:"note num" }), list = h("ul", { class:"items" });
+  const refresh = () => {
+    const t = tot(), [lo, hi] = range();
+    totalEl.replaceChildren(h("span", null, h("span", { class:"k num" }, fmt(t.kcal)), " سعرة"), h("span", { class:"r num" }, "النطاق المتوقع " + fmt(lo) + " – " + fmt(hi)));
+    macEl.textContent = "بروتين " + fmt(t.p) + " غ · كربوهيدرات " + fmt(t.c) + " غ · دهون " + fmt(t.f) + " غ";
+    list.querySelectorAll("[data-k]").forEach(el => el.textContent = fmt(per(sc.items[+el.dataset.k], sc.items[+el.dataset.k].grams).kcal) + " سعرة");
   };
-  $("#cam").onchange = e => { onFile(e.target.files[0]); e.target.value = ""; };
-  $("#gallery").onchange = e => { onFile(e.target.files[0]); e.target.value = ""; };
-  $("#goal").oninput = e => { const v = parseInt(e.target.value, 10); if (v >= 800 && v <= 6000){ goal = v; store.set("goal", v); renderToday(); } };
+  const conf = { high:"ثقة عالية", medium:"ثقة متوسطة", low:"ثقة منخفضة" };
+  const drawItems = () => list.replaceChildren(...sc.items.map((it, i) => h("li", { class:"item" },
+    h("span", { class:"nm" }, it.name), h("span", { class:"num", "data-k": i, style:"font-weight:600" }),
+    h("div", { class:"meta" },
+      h("label", { class:"num" }, h("input", { type:"number", inputmode:"numeric", min:"0", step:"5", value: String(Math.round(it.grams)), "aria-label":"وزن " + it.name,
+        oninput: e => { const v = parseFloat(e.target.value); if (v >= 0){ it.grams = v; refresh(); } } }), " غ"),
+      h("span", { class:"num" }, fmt(it.kcal) + " سعرة/100غ"),
+      h("span", { class:"conf " + it.confidence }, conf[it.confidence]),
+      h("button", { class:"linkbtn", type:"button", onclick: () => { sc.items.splice(i, 1); drawItems(); refresh(); } }, "إزالة")))));
+  drawItems();
+  const saveItems = h("button", { class:"btn line", type:"button", onclick: () => {
+    let n = 0; for (const it of sc.items){ if (allFoods().some(f => f.name === it.name)) continue;
+      putFood({ id:"u" + Date.now() + "-" + n, name: it.name, cat:"starch", kcal: Math.round(it.kcal), p: it.p, c: it.c, f: it.f, unit:"", unitG:0 }); n++; }
+    toast(n ? "حُفظ " + n + " مكوّن في قائمتك" : "كل المكوّنات موجودة في قائمتك");
+  } }, "احفظ المكوّنات في قائمتي");
+  const addBtn = h("button", { class:"btn", type:"button" });
+  const setAddLbl = () => addBtn.textContent = "أضف إلى " + SLOTS[sc.slot];
+  setAddLbl();
+  addBtn.onclick = () => {
+    const t = tot();
+    addMeal({ slot: sc.slot, name: sc.dish, src:"camera", thumb: sc.thumb || "", grams: Math.round(sc.items.reduce((a, i) => a + i.grams, 0)),
+      amount: fmt(sc.items.reduce((a, i) => a + i.grams, 0)) + " غ من صورة", items: sc.items.map(i => ({ name: i.name, grams: Math.round(i.grams) })), ...t });
+    S.scan = null; renderScan(); toast("أُضيفت " + "الوجبة · " + fmt(t.kcal) + " سعرة", "عرض اليوم", () => setTab("today"));
+  };
+  body.append(h("h2", null, sc.dish), totalEl, macEl, list, sc.notes ? h("p", { class:"note" }, sc.notes) : null,
+    h("div", { class:"field" }, h("label", { for:"scan-note" }, "تفاصيل تزيد الدقة (ثم أعد التحليل)"), noteIn),
+    slotChips(() => sc.slot, v => { sc.slot = v; setAddLbl(); }),
+    h("div", { class:"btns" }, addBtn, saveItems), h("div", { class:"btns" }, retry, h("button", { class:"btn soft", type:"button", onclick: () => { S.scan = null; renderScan(); } }, "تجاهل")));
+  refresh();
+}
 
-  // ---------- boot ----------
-  loadLocal();
-  current = EXAMPLE;
-  renderToday(); renderLog(); renderResult();
-  $("#store-note").textContent = "تُحفظ وجباتك في هذا الجهاز.";
+// ---------- events ----------
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+$("#cam").onchange = e => { onFile(e.target.files[0]); e.target.value = ""; };
+$("#gallery").onchange = e => { onFile(e.target.files[0]); e.target.value = ""; };
+$("#goal").oninput = e => { const v = parseInt(e.target.value, 10); if (v >= 800 && v <= 6000) setGoal(v); };
+for (const id of ["#q-add", "#q-lib"]) $(id).oninput = e => { S.q = e.target.value; $("#q-add").value = $("#q-lib").value = S.q; renderLists(); };
+$("#add-food").onclick = () => openEditor({});
+$("#add-food-2").onclick = () => openEditor({});
+$("#copy").onclick = () => {
+  const b = $("#copy"), t = $("#page-link").textContent;
+  const fb = () => { const r = document.createRange(); r.selectNodeContents($("#page-link")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "حدّده وانسخه"; };
+  try{ navigator.clipboard.writeText(t).then(() => { b.textContent = "تم النسخ"; setTimeout(() => b.textContent = "نسخ الرابط", 2000); }, fb); }catch{ fb(); }
+};
 
-  (async () => {
-    if (!window.claude?.use) return;
-    sample = await window.claude.use("sample");
-    db = await window.claude.use("db");
-    const user = await window.claude.use("user");
-    const uid = user ? await user.id() : null;
-    if (db && uid){
-      mealsCol = db.collection("data/users/" + uid + "/meals");
-      const local = meals;
-      let timer = setTimeout(() => { $("#store-note").textContent = "تعذّر الوصول إلى سجلّك المحفوظ الآن؛ ستُحفظ الوجبات على هذا الجهاز."; }, 10000);
-      mealsCol.where("day", "==", dayKey()).onSnapshot(snap => {
-        if (!snap.metadata?.fromCache){ clearTimeout(timer); $("#store-note").textContent = "تُحفظ وجباتك في حسابك، وتظهر على أي جهاز تفتح منه الصفحة."; }
-        meals = snap.docs.map(d => ({ ...d.data(), id: d.id, remote: true })).concat(local.filter(m => !m.remote));
-        renderToday(); renderLog();
-      }, () => { clearTimeout(timer); mealsCol = null; $("#store-note").textContent = "تُحفظ وجباتك في هذا الجهاز."; });
-    }
-  })();
+// ---------- boot ----------
+setTab(["today","add","foods"].includes(S.tab) ? S.tab : "today");
+render();
+$("#store-note").textContent = "تُحفظ بياناتك على هذا الجهاز.";
+
+(async () => {
+  if (!window.claude?.use) return;
+  const [smp, db, user] = await Promise.all(["sample","db","user"].map(n => window.claude.use(n).catch(() => null)));
+  sample = smp;
+  const uid = user ? await user.id() : null;
+  if (!db || !uid) return;
+  try{
+    const base = db.doc("data/users/" + uid + "/app");
+    const handles = { meals: base.collection("meals"), foods: base.collection("foods"), prefs: db.doc("data/users/" + uid + "/prefs") };
+    const timer = setTimeout(() => { $("#store-note").textContent = "تعذّر الوصول إلى حسابك الآن؛ تُحفظ البيانات على هذا الجهاز مؤقتاً."; }, 10000);
+    let migrated = false;
+    handles.meals.where("day", ">=", dayKey(-6)).onSnapshot(snap => {
+      if (!snap.metadata?.fromCache){ clearTimeout(timer); $("#store-note").textContent = "تُحفظ بياناتك في حسابك وتظهر على أي جهاز."; }
+      if (!R){ R = handles; }
+      if (!migrated){
+        migrated = true;
+        const local = S.meals.filter(m => m.id?.startsWith("l") && m.day >= dayKey(-6));
+        for (const m of local){ const { id, ...rest } = m; handles.meals.add(rest).catch(() => {}); }
+        for (const f of Object.values(S.foods)) handles.foods.doc(f.id).set(f).catch(() => {});
+        ls.del("cl.meals");
+      }
+      S.meals = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      render();
+    }, () => { clearTimeout(timer); R = null; $("#store-note").textContent = "تُحفظ بياناتك على هذا الجهاز."; });
+    handles.foods.onSnapshot(snap => {
+      const remote = Object.fromEntries(snap.docs.map(d => [d.id, { ...d.data(), id: d.id }]));
+      S.foods = { ...S.foods, ...remote }; ls.set("cl.foods", S.foods); renderLists();
+    }, () => {});
+    handles.prefs.onSnapshot(s => { const g = s.exists ? +s.data().goal : 0; if (g >= 800) { S.goal = g; ls.set("cl.goal", g); renderToday(); } else if (s.exists === false) handles.prefs.set({ goal: S.goal }).catch(() => {}); }, () => {});
+  }catch{ R = null; }
+})();
 })();
 </script>
