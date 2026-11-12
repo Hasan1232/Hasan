@@ -1,0 +1,15 @@
+{
+  "name": "iron-front",
+  "version": "0.1.0",
+  "description": "لعبة تصويب تكتيكية أونلاين ثلاثية الأبعاد تعمل في المتصفح",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.187.0",
+    "ws": "^8.22.2"
+  }
+}
