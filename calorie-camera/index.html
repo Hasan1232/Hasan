@@ -678,7 +678,7 @@ ${note ? "معلومات من المستخدم (قدّمها على تقديرك
 
 async function analyze(blob, photo, thumb){
   const keepNote = S.scan?.note || "";
-  if (!sample){ S.scan = { photo, error:"التحليل يحتاج فتح الصفحة داخل Claude مع تسجيل الدخول (في Chrome أو تطبيق Claude)." }; renderScan(); return; }
+  if (!sample){ S.scan = { photo, error:"تحليل الصور غير متاح هنا. افتح الرابط في Safari أو Chrome بعد تسجيل الدخول في claude.ai، وليس من داخل واتساب أو تطبيق آخر. تقدر بنفس الوقت تضيف وجبتك من القائمة بالأسفل وتحدد وزنها." }; renderScan(); return; }
   const ctl = new AbortController();
   S.scan = { photo, blob, thumb, note: keepNote, loading: true, ctl }; renderScan();
   $("#scan").scrollIntoView({ behavior:"smooth", block:"start" });
@@ -712,8 +712,8 @@ function renderScan(){
   const noteIn = h("input", { id:"scan-note", value: sc.note || "", placeholder:"تفاصيل تزيد الدقة: الوزن، طريقة الطبخ…", oninput: e => sc.note = e.target.value });
   const retry = sc.blob ? h("button", { class:"btn line", type:"button", onclick: () => analyze(sc.blob, sc.photo, sc.thumb) }, "أعد التحليل") : null;
   if (sc.error){
-    body.append(h("p", { class:"err" }, sc.error), sc.blob ? h("div", { class:"field" }, h("label", { for:"scan-note" }, "أضف تفاصيل ثم أعد التحليل"), noteIn) : null,
-      h("div", { class:"btns" }, retry, h("button", { class:"btn soft", type:"button", onclick: () => { S.scan = null; renderScan(); } }, "إغلاق")));
+    body.append(...[h("p", { class:"err" }, sc.error), sc.blob ? h("div", { class:"field" }, h("label", { for:"scan-note" }, "أضف تفاصيل ثم أعد التحليل"), noteIn) : null,
+      h("div", { class:"btns" }, retry, h("button", { class:"btn soft", type:"button", onclick: () => { S.scan = null; renderScan(); } }, "إغلاق"))].filter(Boolean));
     return;
   }
   const tot = () => sc.items.reduce((a, it) => { const n = per(it, it.grams); a.kcal += n.kcal; a.p += n.p; a.c += n.c; a.f += n.f; return a; }, { kcal:0,p:0,c:0,f:0 });
@@ -771,6 +771,7 @@ $("#copy").onclick = () => {
 };
 
 // ---------- boot ----------
+try { document.documentElement.lang = "ar"; document.documentElement.dir = "rtl"; } catch {}
 setTab(["today","add","foods"].includes(S.tab) ? S.tab : "today");
 render();
 $("#store-note").textContent = "تُحفظ بياناتك على هذا الجهاز.";
