@@ -59,6 +59,10 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:12p
 .shoot svg{width:26px;height:26px}
 .shoot{cursor:pointer;position:relative}
 .shoot.busy{opacity:.55;pointer-events:none}
+.appnote{background:var(--herb-soft);display:flex;flex-direction:column;gap:8px}
+.linkrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.linkrow code{direction:ltr;font-size:.75rem;word-break:break-all;min-width:0;flex:1;user-select:all}
+.copy{flex:0 0 auto;min-width:0;padding:6px 12px}
 .pick{text-align:center;cursor:pointer;position:relative}
 .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
 .shoot:focus-within,.pick:focus-within{outline:2px solid var(--herb);outline-offset:2px}
@@ -151,6 +155,8 @@ textarea{width:100%;min-height:58px;resize:vertical;padding:10px 12px;border:1px
     <div class="row">
       <label class="ghost pick" for="gallery"><input id="gallery" class="vh" type="file" accept="image/*">اختر صورة من المعرض</label>
     </div>
+    <p class="tips appnote">إذا ما انفتحت الكاميرا داخل تطبيق Claude على أندرويد، انسخ الرابط وافتحه في Chrome بعد تسجيل الدخول في claude.ai.
+      <span class="linkrow"><code id="page-link">https://claude.ai/artifact/7YFowdSK7jr8wYj2wXd67L</code><button class="ghost copy" id="copy" type="button">نسخ الرابط</button></span></p>
     <label class="hint" for="note">تفاصيل تزيد الدقة (اختياري)</label>
     <textarea id="note" placeholder="مثال: صحن كبسة دجاج، الرز مطبوخ بزيت، وزن الصحن تقريبًا 350 غرام"></textarea>
     <p class="tips"><b>للحصول على أدق نتيجة:</b> صوّر من زاوية 45° في إضاءة جيدة، وضع شوكة أو ملعقة أو يدك بجانب الطبق كمقياس للحجم، واذكر الوزن أو طريقة الطبخ (زيت، سمن، قلي) إن عرفتها.</p>
@@ -445,6 +451,12 @@ ${note ? `\nمعلومات من المستخدم (اعتمد عليها فوق �
   function loadLocal(){ meals = store.get("meals-" + dayKey(), []); }
 
   // ---------- events ----------
+  $("#copy").onclick = () => {
+    const t = $("#page-link").textContent, b = $("#copy");
+    const done = () => { b.textContent = "تم النسخ"; setTimeout(() => b.textContent = "نسخ الرابط", 2000); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents($("#page-link")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "الرابط محدّد، انسخه"; };
+    try { navigator.clipboard.writeText(t).then(done, fallback); } catch { fallback(); }
+  };
   $("#cam").onchange = e => { onFile(e.target.files[0]); e.target.value = ""; };
   $("#gallery").onchange = e => { onFile(e.target.files[0]); e.target.value = ""; };
   $("#goal").oninput = e => { const v = parseInt(e.target.value, 10); if (v >= 800 && v <= 6000){ goal = v; store.set("goal", v); renderToday(); } };
