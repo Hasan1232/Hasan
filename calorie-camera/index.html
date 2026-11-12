@@ -57,7 +57,11 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:12p
 .shoot{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px;border:none;border-radius:16px;
   background:var(--herb);color:var(--bg);font-family:var(--f-display);font-size:1.15rem;font-weight:700}
 .shoot svg{width:26px;height:26px}
-.shoot:disabled{opacity:.55;cursor:default}
+.shoot{cursor:pointer;position:relative}
+.shoot.busy{opacity:.55;pointer-events:none}
+.pick{text-align:center;cursor:pointer;position:relative}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
+.shoot:focus-within,.pick:focus-within{outline:2px solid var(--herb);outline-offset:2px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .ghost{flex:1;min-width:140px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:.9rem}
 label.hint{font-size:.85rem;color:var(--muted)}
@@ -139,14 +143,13 @@ textarea{width:100%;min-height:58px;resize:vertical;padding:10px 12px;border:1px
   </section>
 
   <section class="capture" aria-label="تصوير الوجبة">
-    <input id="cam" type="file" accept="image/*" capture="environment" hidden>
-    <input id="gallery" type="file" accept="image/*" hidden>
-    <button class="shoot" id="shoot" type="button">
+    <label class="shoot" id="shoot" for="cam">
+      <input id="cam" class="vh" type="file" accept="image/*" capture="environment">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.8"/></svg>
       صوّر الوجبة
-    </button>
+    </label>
     <div class="row">
-      <button class="ghost" id="pick" type="button">اختر صورة من المعرض</button>
+      <label class="ghost pick" for="gallery"><input id="gallery" class="vh" type="file" accept="image/*">اختر صورة من المعرض</label>
     </div>
     <label class="hint" for="note">تفاصيل تزيد الدقة (اختياري)</label>
     <textarea id="note" placeholder="مثال: صحن كبسة دجاج، الرز مطبوخ بزيت، وزن الصحن تقريبًا 350 غرام"></textarea>
@@ -392,7 +395,7 @@ ${note ? `\nمعلومات من المستخدم (اعتمد عليها فوق �
     current = { photo, blob, thumb, loading: "جارٍ التعرّف على الطعام وتقدير الكميات…", ctl };
     renderResult();
     $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
-    $("#shoot").disabled = true;
+    $("#shoot").classList.add("busy");
     try{
       const note = $("#note").value.trim();
       const r = await sample.json(PROMPT(note), { images: [blob], modelTier: "complex", signal: ctl.signal });
@@ -417,7 +420,7 @@ ${note ? `\nمعلومات من المستخدم (اعتمد عليها فوق �
       }[e?.code];
       current = msg === null ? null : { photo, blob, thumb, error: msg || "تعذّر تحليل الصورة. تأكد من الاتصال وأعد المحاولة." };
     }finally{
-      $("#shoot").disabled = false;
+      $("#shoot").classList.remove("busy");
     }
     renderResult();
   }
@@ -442,8 +445,6 @@ ${note ? `\nمعلومات من المستخدم (اعتمد عليها فوق �
   function loadLocal(){ meals = store.get("meals-" + dayKey(), []); }
 
   // ---------- events ----------
-  $("#shoot").onclick = () => $("#cam").click();
-  $("#pick").onclick = () => $("#gallery").click();
   $("#cam").onchange = e => { onFile(e.target.files[0]); e.target.value = ""; };
   $("#gallery").onchange = e => { onFile(e.target.files[0]); e.target.value = ""; };
   $("#goal").oninput = e => { const v = parseInt(e.target.value, 10); if (v >= 800 && v <= 6000){ goal = v; store.set("goal", v); renderToday(); } };
